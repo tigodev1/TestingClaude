@@ -1,0 +1,28 @@
+{
+  "name": "roblox-analytics-dashboard",
+  "version": "1.0.0",
+  "description": "Advanced analytics dashboard for Roblox games using Roblox Cloud API",
+  "main": "server/index.js",
+  "scripts": {
+    "server": "node server/index.js",
+    "client": "cd client && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && cd client && npm install",
+    "build": "cd client && npm run build"
+  },
+  "keywords": ["roblox", "analytics", "dashboard", "cloud-api"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2",
+    "node-cron": "^3.0.3",
+    "better-sqlite3": "^9.2.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
+  }
+}

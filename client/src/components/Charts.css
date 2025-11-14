@@ -1,0 +1,32 @@
+.chart-container {
+  min-height: 300px;
+  position: relative;
+}
+
+.chart-info {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border-left: 4px solid rgba(75, 192, 192, 1);
+}
+
+.chart-info p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+}
+
+.no-data p {
+  margin: 0;
+  font-size: 16px;
+}

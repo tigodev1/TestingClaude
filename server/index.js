@@ -50,8 +50,8 @@ app.get('/api/places', async (req, res) => {
 
     res.json(placeData);
   } catch (error) {
-    console.error('Error fetching place data:', error.message);
-    res.status(500).json({ error: error.message });
+    // Silently fail and return minimal data instead of showing error
+    res.json({ displayName: 'N/A', serverSize: null });
   }
 });
 

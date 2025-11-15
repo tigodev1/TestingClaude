@@ -56,6 +56,23 @@ class DatabaseService {
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_universe_timestamp ON universe_snapshots(timestamp)`);
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_place_timestamp ON place_snapshots(timestamp)`);
 
+      // Create game statistics table for tracking players, visits, likes, etc.
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS game_stats_snapshots (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          timestamp TEXT NOT NULL,
+          playing INTEGER DEFAULT 0,
+          visits INTEGER DEFAULT 0,
+          favorites INTEGER DEFAULT 0,
+          up_votes INTEGER DEFAULT 0,
+          down_votes INTEGER DEFAULT 0,
+          max_players INTEGER DEFAULT 0,
+          data TEXT NOT NULL
+        )
+      `);
+
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_stats_timestamp ON game_stats_snapshots(timestamp)`);
+
       // Save the database
       this.saveDatabase();
 
@@ -138,6 +155,34 @@ class DatabaseService {
     }
   }
 
+  storeGameStats(stats, votes) {
+    if (!this.db) return;
+
+    try {
+      this.db.run(
+        `INSERT INTO game_stats_snapshots (
+          timestamp, playing, visits, favorites,
+          up_votes, down_votes, max_players, data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          stats.timestamp || new Date().toISOString(),
+          stats.playing || 0,
+          stats.visits || 0,
+          stats.favoritedCount || 0,
+          votes.upVotes || 0,
+          votes.downVotes || 0,
+          stats.maxPlayers || 0,
+          JSON.stringify({ stats, votes })
+        ]
+      );
+
+      // Save after insert
+      this.saveDatabase();
+    } catch (error) {
+      console.error('Error storing game stats:', error);
+    }
+  }
+
   getHistoricalData(type = 'universe', period = '7d') {
     if (!this.db) return [];
 
@@ -153,7 +198,9 @@ class DatabaseService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
 
-      const table = type === 'universe' ? 'universe_snapshots' : 'place_snapshots';
+      let table = 'universe_snapshots';
+      if (type === 'place') table = 'place_snapshots';
+      if (type === 'stats') table = 'game_stats_snapshots';
 
       const results = this.db.exec(
         `SELECT * FROM ${table} WHERE timestamp >= ? ORDER BY timestamp ASC`,

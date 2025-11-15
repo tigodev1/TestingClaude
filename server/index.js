@@ -55,6 +55,23 @@ app.get('/api/places', async (req, res) => {
   }
 });
 
+app.get('/api/stats', async (req, res) => {
+  try {
+    const [gameStats, gameVotes] = await Promise.all([
+      robloxService.getGameStats(),
+      robloxService.getGameVotes()
+    ]);
+
+    // Store in database
+    dbService.storeGameStats(gameStats, gameVotes);
+
+    res.json({ ...gameStats, ...gameVotes });
+  } catch (error) {
+    console.error('Error fetching game stats:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/analytics/historical', async (req, res) => {
   try {
     const { type, period } = req.query;
@@ -93,19 +110,28 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Automatic data collection - runs every hour
-cron.schedule('0 * * * *', async () => {
+// Automatic data collection - runs every 5 minutes
+cron.schedule('*/5 * * * *', async () => {
   console.log('Running scheduled data collection...');
   try {
+    // Collect universe data
     const universeData = await robloxService.getUniverse();
     dbService.storeUniverseData(universeData);
 
+    // Collect place data
     if (universeData.rootPlaceId) {
       const placeData = await robloxService.getPlace(universeData.rootPlaceId);
       dbService.storePlaceData(placeData);
     }
 
-    console.log('Scheduled data collection completed');
+    // Collect game statistics (players, visits, favorites, likes)
+    const [gameStats, gameVotes] = await Promise.all([
+      robloxService.getGameStats(),
+      robloxService.getGameVotes()
+    ]);
+    dbService.storeGameStats(gameStats, gameVotes);
+
+    console.log('✅ Scheduled data collection completed');
   } catch (error) {
     console.error('Error in scheduled collection:', error.message);
   }

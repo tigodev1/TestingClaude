@@ -30,3 +30,27 @@
   margin: 0;
   font-size: 16px;
 }
+
+.stats-chart-container {
+  width: 100%;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.chart-box {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 968px) {
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,57 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './Dashboard.css';
 import StatCard from './StatCard';
 import PlatformChart from './PlatformChart';
 import HistoricalChart from './HistoricalChart';
+import StatsChart from './StatsChart';
+import TrendChart from './TrendChart';
 
 function Dashboard() {
   const [universeData, setUniverseData] = useState(null);
   const [placeData, setPlaceData] = useState(null);
-  const [historicalData, setHistoricalData] = useState([]);
+  const [gameStats, setGameStats] = useState(null);
+  const [statsHistory, setStatsHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
 
-  useEffect(() => {
-    fetchAllData();
-
-    // Auto-refresh every 5 minutes
-    const interval = setInterval(fetchAllData, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!loading) setLoading(true);
       setError(null);
 
-      // Fetch universe data
-      const universeResponse = await fetch('/api/universe');
-      if (!universeResponse.ok) throw new Error('Failed to fetch universe data');
-      const universe = await universeResponse.json();
-      setUniverseData(universe);
+      // Fetch all data in parallel for better performance
+      const [universeResponse, placeResponse, statsResponse, statsHistoryResponse] = await Promise.all([
+        fetch('/api/universe').catch(() => null),
+        fetch('/api/places').catch(() => null),
+        fetch('/api/stats').catch(() => null),
+        fetch('/api/analytics/historical?type=stats&period=7d').catch(() => null)
+      ]);
 
-      // Fetch place data
-      try {
-        const placeResponse = await fetch('/api/places');
-        if (placeResponse.ok) {
-          const place = await placeResponse.json();
-          setPlaceData(place);
-        }
-      } catch (err) {
-        console.error('Place data fetch failed:', err);
+      // Process universe data
+      if (universeResponse?.ok) {
+        const universe = await universeResponse.json();
+        setUniverseData(universe);
       }
 
-      // Fetch historical data
-      try {
-        const historicalResponse = await fetch('/api/analytics/historical?type=universe&period=7d');
-        if (historicalResponse.ok) {
-          const historical = await historicalResponse.json();
-          setHistoricalData(historical);
-        }
-      } catch (err) {
-        console.error('Historical data fetch failed:', err);
+      // Process place data
+      if (placeResponse?.ok) {
+        const place = await placeResponse.json();
+        setPlaceData(place);
+      }
+
+      // Process game stats
+      if (statsResponse?.ok) {
+        const stats = await statsResponse.json();
+        setGameStats(stats);
+      }
+
+      // Process historical stats
+      if (statsHistoryResponse?.ok) {
+        const history = await statsHistoryResponse.json();
+        setStatsHistory(history);
       }
 
       setLastUpdate(new Date());
@@ -60,9 +58,40 @@ function Dashboard() {
       setError(err.message);
       setLoading(false);
     }
-  };
+  }, [loading]);
 
-  if (loading && !universeData) {
+  useEffect(() => {
+    fetchAllData();
+
+    // Auto-refresh every 2 minutes (reduced from 5 for better real-time data)
+    const interval = setInterval(fetchAllData, 2 * 60 * 1000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Calculate like/dislike ratio
+  const likeRatio = useMemo(() => {
+    if (!gameStats || !gameStats.upVotes) return 0;
+    const total = gameStats.upVotes + gameStats.downVotes;
+    if (total === 0) return 0;
+    return ((gameStats.upVotes / total) * 100).toFixed(1);
+  }, [gameStats]);
+
+  // Calculate growth from historical data
+  const calculateGrowth = useCallback((metric) => {
+    if (!statsHistory || statsHistory.length < 2) return null;
+
+    const latest = statsHistory[statsHistory.length - 1]?.[metric] || 0;
+    const previous = statsHistory[Math.max(0, statsHistory.length - 7)]?.[metric] || 0;
+
+    if (previous === 0) return null;
+
+    const growth = ((latest - previous) / previous) * 100;
+    return growth.toFixed(1);
+  }, [statsHistory]);
+
+  if (loading && !gameStats) {
     return (
       <div className="dashboard-loading">
         <div className="spinner"></div>
@@ -71,7 +100,7 @@ function Dashboard() {
     );
   }
 
-  if (error && !universeData) {
+  if (error && !gameStats) {
     return (
       <div className="dashboard-error">
         <h2>Error Loading Data</h2>
@@ -90,18 +119,55 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Overview Stats */}
+        {/* Live Statistics */}
+        <div className="section-title">Live Statistics</div>
+        <div className="stats-grid">
+          <StatCard
+            title="Players Online"
+            value={gameStats?.playing?.toLocaleString() || '0'}
+            icon="👥"
+            color="#4caf50"
+            subtitle="Currently playing"
+            trend={calculateGrowth('playing')}
+          />
+          <StatCard
+            title="Total Visits"
+            value={gameStats?.visits?.toLocaleString() || '0'}
+            icon="👁️"
+            color="#2196f3"
+            subtitle="All-time visits"
+            trend={calculateGrowth('visits')}
+          />
+          <StatCard
+            title="Favorites"
+            value={gameStats?.favoritedCount?.toLocaleString() || '0'}
+            icon="⭐"
+            color="#ff9800"
+            subtitle="Favorited by players"
+            trend={calculateGrowth('favorites')}
+          />
+          <StatCard
+            title="Like Ratio"
+            value={`${likeRatio}%`}
+            icon="👍"
+            color="#9c27b0"
+            subtitle={`${gameStats?.upVotes?.toLocaleString() || 0} likes`}
+          />
+        </div>
+
+        {/* Game Information */}
+        <div className="section-title">Game Information</div>
         <div className="stats-grid">
           <StatCard
             title="Game Name"
-            value={universeData?.displayName || 'N/A'}
+            value={universeData?.displayName || gameStats?.name || 'N/A'}
             icon="🎮"
             color="#4caf50"
           />
           <StatCard
-            title="Visibility"
-            value={universeData?.visibility || 'N/A'}
-            icon="👁️"
+            title="Max Server Size"
+            value={placeData?.serverSize || gameStats?.maxPlayers || 'N/A'}
+            icon="👤"
             color="#2196f3"
           />
           <StatCard
@@ -111,26 +177,44 @@ function Dashboard() {
             color="#ff9800"
           />
           <StatCard
-            title="Private Server Price"
-            value={universeData?.privateServerPriceRobux ? `${universeData.privateServerPriceRobux} R$` : 'Free'}
-            icon="💰"
+            title="Visibility"
+            value={universeData?.visibility || 'N/A'}
+            icon="🌐"
             color="#9c27b0"
           />
         </div>
 
-        {/* Platform Support */}
-        <div className="chart-section">
-          <h2>Platform Support</h2>
-          <div className="chart-grid">
-            <PlatformChart universeData={universeData} />
+        {/* Trending Charts */}
+        {statsHistory && statsHistory.length > 0 && (
+          <div className="chart-section">
+            <h2>📈 Player Trends (Last 7 Days)</h2>
+            <TrendChart data={statsHistory} />
           </div>
-        </div>
+        )}
+
+        {/* Platform Support */}
+        {universeData && (
+          <div className="chart-section">
+            <h2>Platform Support</h2>
+            <div className="chart-grid">
+              <PlatformChart universeData={universeData} />
+            </div>
+          </div>
+        )}
+
+        {/* Vote Distribution */}
+        {gameStats && (gameStats.upVotes > 0 || gameStats.downVotes > 0) && (
+          <div className="chart-section">
+            <h2>👍👎 Likes vs Dislikes</h2>
+            <StatsChart gameStats={gameStats} />
+          </div>
+        )}
 
         {/* Game Details */}
         <div className="details-section">
           <div className="detail-card">
             <h3>Game Description</h3>
-            <p>{universeData?.description || 'No description available'}</p>
+            <p>{universeData?.description || gameStats?.description || 'No description available'}</p>
           </div>
 
           {placeData && (
@@ -142,19 +226,15 @@ function Dashboard() {
                   <span className="detail-value">{placeData.displayName || 'N/A'}</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">Max Server Size:</span>
-                  <span className="detail-value">{placeData.serverSize || 'N/A'} players</span>
-                </div>
-                <div className="detail-item">
                   <span className="detail-label">Created:</span>
                   <span className="detail-value">
-                    {placeData.createTime ? new Date(placeData.createTime).toLocaleDateString() : 'N/A'}
+                    {gameStats?.created ? new Date(gameStats.created).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Last Updated:</span>
                   <span className="detail-value">
-                    {placeData.updateTime ? new Date(placeData.updateTime).toLocaleDateString() : 'N/A'}
+                    {gameStats?.updated ? new Date(gameStats.updated).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -162,50 +242,13 @@ function Dashboard() {
           )}
         </div>
 
-        {/* Historical Data */}
-        {historicalData.length > 0 && (
-          <div className="chart-section">
-            <h2>Historical Tracking ({historicalData.length} snapshots)</h2>
-            <HistoricalChart data={historicalData} />
-          </div>
-        )}
-
-        {/* Social Links */}
-        {(universeData?.facebookLink || universeData?.twitterLink ||
-          universeData?.youtubeLink || universeData?.discordLink) && (
-          <div className="social-section">
-            <h3>Social Links</h3>
-            <div className="social-links">
-              {universeData.facebookLink && (
-                <a href={universeData.facebookLink} target="_blank" rel="noopener noreferrer" className="social-link">
-                  Facebook
-                </a>
-              )}
-              {universeData.twitterLink && (
-                <a href={universeData.twitterLink} target="_blank" rel="noopener noreferrer" className="social-link">
-                  Twitter
-                </a>
-              )}
-              {universeData.youtubeLink && (
-                <a href={universeData.youtubeLink} target="_blank" rel="noopener noreferrer" className="social-link">
-                  YouTube
-                </a>
-              )}
-              {universeData.discordLink && (
-                <a href={universeData.discordLink} target="_blank" rel="noopener noreferrer" className="social-link">
-                  Discord
-                </a>
-              )}
-            </div>
-          </div>
-        )}
-
+        {/* Refresh Button */}
         <button className="refresh-button" onClick={fetchAllData} disabled={loading}>
-          {loading ? 'Refreshing...' : '🔄 Refresh Data'}
+          {loading ? '🔄 Refreshing...' : '🔄 Refresh Data'}
         </button>
       </div>
     </div>
   );
 }
 
-export default Dashboard;
+export default React.memo(Dashboard);

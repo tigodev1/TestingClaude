@@ -57,3 +57,23 @@
   font-size: 24px;
   font-weight: 700;
 }
+
+.stat-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.stat-trend {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.trend-up {
+  color: #4caf50;
+}
+
+.trend-down {
+  color: #f44336;
+}

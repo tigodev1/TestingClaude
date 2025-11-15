@@ -14,8 +14,10 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Initialize database
-dbService.initDatabase();
+// Async server startup
+async function startServer() {
+  // Initialize database
+  await dbService.initDatabase();
 
 // API Routes
 app.get('/api/universe', async (req, res) => {
@@ -109,9 +111,16 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Roblox Analytics Server running on http://localhost:${PORT}`);
-  console.log(`📊 Dashboard will be available at http://localhost:3000`);
-  console.log(`⚙️  API Key configured: ${!!process.env.ROBLOX_API_KEY}`);
-  console.log(`🎮 Universe ID: ${process.env.UNIVERSE_ID || 'NOT SET'}`);
+  app.listen(PORT, () => {
+    console.log(`🚀 Roblox Analytics Server running on http://localhost:${PORT}`);
+    console.log(`📊 Dashboard will be available at http://localhost:3000`);
+    console.log(`⚙️  API Key configured: ${!!process.env.ROBLOX_API_KEY}`);
+    console.log(`🎮 Universe ID: ${process.env.UNIVERSE_ID || 'NOT SET'}`);
+  });
+}
+
+// Start the server
+startServer().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });

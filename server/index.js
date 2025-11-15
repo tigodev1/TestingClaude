@@ -1,11 +1,11 @@
+// Load environment variables FIRST before anything else
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const cron = require('node-cron');
 const robloxService = require('./services/robloxService');
 const dbService = require('./services/dbService');
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;

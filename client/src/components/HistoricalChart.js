@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -25,7 +25,6 @@ ChartJS.register(
 );
 
 function HistoricalChart({ data }) {
-  const [metric, setMetric] = useState('snapshots');
 
   if (!data || data.length === 0) {
     return (

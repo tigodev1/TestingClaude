@@ -237,7 +237,7 @@ TestingClaude/
 - Node.js
 - Express.js
 - Axios (HTTP client)
-- better-sqlite3 (Database)
+- sql.js (SQLite database - pure JavaScript, works on Windows without build tools)
 - node-cron (Scheduled tasks)
 - dotenv (Environment variables)
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import StatCard from './StatCard';
-import UniverseChart from './UniverseChart';
 import PlatformChart from './PlatformChart';
 import HistoricalChart from './HistoricalChart';
 

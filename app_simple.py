@@ -789,6 +789,47 @@ def increment_ordered():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/ordered/bulk-delete', methods=['POST'])
+def bulk_delete_ordered():
+    """Bulk delete entries from ordered datastore"""
+    if not ordered_api_client:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        data = request.get_json()
+        datastore = data.get('datastore', '')
+        scope = data.get('scope', 'global')
+        keys = data.get('keys', [])
+
+        if not datastore:
+            return jsonify({'error': 'Datastore name required'}), 400
+        if not keys or len(keys) == 0:
+            return jsonify({'error': 'At least one key required'}), 400
+
+        deleted = 0
+        failed = 0
+        errors = []
+
+        for key in keys:
+            try:
+                ordered_api_client.delete_ordered_entry(datastore, key, scope)
+                deleted += 1
+                log_operation('DELETE_ORDERED', datastore, key, True)
+            except Exception as e:
+                failed += 1
+                errors.append(f"{key}: {str(e)}")
+                log_operation('DELETE_ORDERED', datastore, key, False, str(e))
+
+        return jsonify({
+            'success': True,
+            'deleted': deleted,
+            'failed': failed,
+            'errors': errors
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ===== DELETE ALL KEYS =====
 @app.route('/api/bulk/delete-all', methods=['POST'])
 def delete_all_keys():

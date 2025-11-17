@@ -1378,6 +1378,8 @@ async function loadOrderedEntries() {
     }
 }
 
+let selectedOrderedEntries = new Set();
+
 function displayOrderedEntries(entries) {
     const card = document.getElementById('orderedEntriesCard');
     const countEl = document.getElementById('orderedEntryCount');
@@ -1387,12 +1389,16 @@ function displayOrderedEntries(entries) {
     if (countEl) countEl.textContent = entries.length;
     if (!tbody) return;
 
+    // Clear selection
+    selectedOrderedEntries.clear();
+    updateOrderedSelectionCount();
+
     if (entries.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="4" class="empty-state">
-                    <i class="fas fa-list-ol"></i>
-                    <p>No ordered entries found</p>
+                <td colspan="5" class="empty-state">
+                    <i class="fas fa-trophy"></i>
+                    <p>No entries found in this leaderboard</p>
                 </td>
             </tr>
         `;
@@ -1401,19 +1407,90 @@ function displayOrderedEntries(entries) {
 
     tbody.innerHTML = entries.map((entry, index) => `
         <tr>
-            <td><strong>#${index + 1}</strong></td>
+            <td><input type="checkbox" class="ordered-entry-checkbox" data-key="${escapeHtml(entry.id || entry.key)}" onchange="updateOrderedSelectionCount()"></td>
+            <td><strong style="color: ${index < 3 ? '#43e97b' : 'var(--text-primary)'}">#${index + 1}</strong></td>
             <td><code>${escapeHtml(entry.id || entry.key)}</code></td>
-            <td><span class="badge badge-primary">${entry.value}</span></td>
+            <td><span class="badge badge-primary" style="font-size: 14px; padding: 6px 12px;">${entry.value.toLocaleString()}</span></td>
             <td>
-                <button class="btn btn-sm btn-warning" onclick="updateOrderedEntry('${escapeHtml(entry.id || entry.key)}', ${entry.value})">
+                <button class="btn btn-sm btn-warning" onclick="updateOrderedEntry('${escapeHtml(entry.id || entry.key)}', ${entry.value})" title="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteOrderedEntry('${escapeHtml(entry.id || entry.key)}')">
+                <button class="btn btn-sm btn-danger" onclick="deleteOrderedEntry('${escapeHtml(entry.id || entry.key)}')" title="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
         </tr>
     `).join('');
+}
+
+function updateOrderedSelectionCount() {
+    const checkboxes = document.querySelectorAll('.ordered-entry-checkbox:checked');
+    const count = checkboxes.length;
+    const countEl = document.getElementById('selectedOrderedCount');
+    const btn = document.getElementById('bulkDeleteOrderedBtn');
+
+    if (countEl) countEl.textContent = count;
+    if (btn) btn.disabled = count === 0;
+
+    selectedOrderedEntries.clear();
+    checkboxes.forEach(cb => selectedOrderedEntries.add(cb.getAttribute('data-key')));
+}
+
+function toggleAllOrderedEntries() {
+    const selectAll = document.getElementById('selectAllOrderedCheckbox');
+    const checkboxes = document.querySelectorAll('.ordered-entry-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateOrderedSelectionCount();
+}
+
+function selectAllOrderedEntries() {
+    const checkboxes = document.querySelectorAll('.ordered-entry-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => cb.checked = !allChecked);
+    const selectAllCb = document.getElementById('selectAllOrderedCheckbox');
+    if (selectAllCb) selectAllCb.checked = !allChecked;
+    updateOrderedSelectionCount();
+}
+
+async function bulkDeleteOrderedEntries() {
+    if (selectedOrderedEntries.size === 0) {
+        showToast('No entries selected', 'warning');
+        return;
+    }
+
+    const confirmMsg = `Are you sure you want to delete ${selectedOrderedEntries.size} entries? This cannot be undone!`;
+    if (!confirm(confirmMsg)) return;
+
+    const datastoreName = document.getElementById('orderedDatastore').value.trim();
+    const scope = document.getElementById('orderedScope').value.trim() || 'global';
+
+    showToast(`Deleting ${selectedOrderedEntries.size} entries...`, 'info');
+
+    try {
+        const response = await fetch('/api/ordered/bulk-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                datastore: datastoreName,
+                scope: scope,
+                keys: Array.from(selectedOrderedEntries)
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast(`Deleted ${data.deleted} entries (${data.failed} failed)`, data.failed > 0 ? 'warning' : 'success');
+
+        // Reload the list
+        loadOrderedEntries();
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
 }
 
 async function createOrderedEntry() {

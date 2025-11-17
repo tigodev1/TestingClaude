@@ -821,8 +821,33 @@
                         </div>
 
                         <div style="margin-top: 16px;">
-                            <label class="form-label" style="margin-bottom: 8px;">Response</label>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label class="form-label" style="margin: 0;">Response</label>
+                                <div style="display: flex; gap: 6px;">
+                                    <button class="btn btn-sm btn-secondary" onclick="copyApiResponse()" title="Copy to clipboard">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="downloadApiResponse()" title="Download as JSON">
+                                        <i class="fas fa-download"></i> Download
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="toggleApiResponseFormat()" title="Toggle pretty/compact">
+                                        <i class="fas fa-compress-alt"></i> Compact
+                                    </button>
+                                </div>
+                            </div>
                             <pre id="apiTestResponse" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-size: 11px; max-height: 400px; overflow: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);">Click "Send" or use a quick test to see the response here...</pre>
+                        </div>
+
+                        <div style="margin-top: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label class="form-label" style="margin: 0;">Request History (Local)</label>
+                                <button class="btn btn-sm btn-secondary" onclick="clearRequestHistory()" title="Clear history">
+                                    <i class="fas fa-trash"></i> Clear
+                                </button>
+                            </div>
+                            <div id="requestHistoryList" style="background: var(--bg-tertiary); border-radius: 8px; padding: 8px; max-height: 150px; overflow-y: auto; font-size: 11px;">
+                                <div style="color: var(--text-secondary); text-align: center; padding: 8px;">No requests yet</div>
+                            </div>
                         </div>
                     </div>
                 </div>

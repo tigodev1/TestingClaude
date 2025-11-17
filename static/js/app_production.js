@@ -1901,6 +1901,8 @@ async function testProxyApi() {
     statusSpan.textContent = 'Sending...';
     timeSpan.textContent = '-';
     sizeSpan.textContent = '-';
+    lastApiResponse = null;
+    isCompactView = false;
 
     const startTime = performance.now();
 
@@ -1920,6 +1922,7 @@ async function testProxyApi() {
         const responseTime = Math.round(endTime - startTime);
 
         const data = await response.json();
+        lastApiResponse = data; // Save for copy/download
         const jsonString = JSON.stringify(data, null, 2);
         const sizeBytes = new Blob([jsonString]).size;
 
@@ -1931,6 +1934,9 @@ async function testProxyApi() {
 
         // Syntax highlight the JSON
         responseBox.innerHTML = syntaxHighlightJson(jsonString);
+
+        // Add to request history
+        addToRequestHistory(method, url, response.status, responseTime);
 
         showToast(`API request completed (${response.status})`, response.status < 400 ? 'success' : 'error');
     } catch (error) {
@@ -1963,4 +1969,124 @@ function syntaxHighlightJson(json) {
         }
         return '<span style="' + cls + '">' + match + '</span>';
     });
+}
+
+// ===== ADVANCED API TESTER FEATURES =====
+let lastApiResponse = null;
+let isCompactView = false;
+let requestHistory = JSON.parse(localStorage.getItem('apiRequestHistory') || '[]');
+
+// Load request history on page load
+document.addEventListener('DOMContentLoaded', function() {
+    renderRequestHistory();
+});
+
+function copyApiResponse() {
+    if (!lastApiResponse) {
+        showToast('No response to copy', 'warning');
+        return;
+    }
+    const jsonStr = JSON.stringify(lastApiResponse, null, 2);
+    navigator.clipboard.writeText(jsonStr).then(() => {
+        showToast('Response copied to clipboard', 'success');
+    }).catch(() => {
+        showToast('Failed to copy to clipboard', 'error');
+    });
+}
+
+function downloadApiResponse() {
+    if (!lastApiResponse) {
+        showToast('No response to download', 'warning');
+        return;
+    }
+    const jsonStr = JSON.stringify(lastApiResponse, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `roblox_api_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Response downloaded as JSON', 'success');
+}
+
+function toggleApiResponseFormat() {
+    if (!lastApiResponse) {
+        showToast('No response to format', 'warning');
+        return;
+    }
+    isCompactView = !isCompactView;
+    const responseBox = document.getElementById('apiTestResponse');
+    if (isCompactView) {
+        responseBox.textContent = JSON.stringify(lastApiResponse);
+        showToast('Compact view enabled', 'info');
+    } else {
+        responseBox.innerHTML = syntaxHighlightJson(JSON.stringify(lastApiResponse, null, 2));
+        showToast('Pretty view enabled', 'info');
+    }
+}
+
+function addToRequestHistory(method, url, status, responseTime) {
+    const entry = {
+        method,
+        url,
+        status,
+        responseTime,
+        timestamp: new Date().toLocaleTimeString()
+    };
+    requestHistory.unshift(entry);
+    // Keep only last 20 requests
+    if (requestHistory.length > 20) {
+        requestHistory = requestHistory.slice(0, 20);
+    }
+    localStorage.setItem('apiRequestHistory', JSON.stringify(requestHistory));
+    renderRequestHistory();
+}
+
+function renderRequestHistory() {
+    const container = document.getElementById('requestHistoryList');
+    if (!container) return;
+
+    if (requestHistory.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 8px;">No requests yet</div>';
+        return;
+    }
+
+    let html = '';
+    requestHistory.forEach((entry, index) => {
+        const statusColor = entry.status < 400 ? 'var(--success)' : 'var(--danger)';
+        const shortUrl = entry.url.length > 40 ? entry.url.substring(0, 40) + '...' : entry.url;
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px; background: var(--bg-card); border-radius: 4px; margin-bottom: 4px; cursor: pointer;" onclick="replayRequest(${index})" title="Click to load this request">
+                <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                    <span style="background: var(--accent-primary); color: white; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 600; flex-shrink: 0;">${entry.method}</span>
+                    <span style="color: var(--text-primary); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${shortUrl}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                    <span style="color: ${statusColor}; font-weight: 600; font-size: 10px;">${entry.status}</span>
+                    <span style="color: var(--text-secondary); font-size: 9px;">${entry.responseTime}ms</span>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function replayRequest(index) {
+    const entry = requestHistory[index];
+    if (entry) {
+        document.getElementById('apiTestMethod').value = entry.method;
+        document.getElementById('apiTestUrl').value = entry.url;
+        document.getElementById('apiTestBodySection').style.display = entry.method === 'POST' ? 'block' : 'none';
+        showToast('Request loaded - click Send to replay', 'info');
+    }
+}
+
+function clearRequestHistory() {
+    requestHistory = [];
+    localStorage.removeItem('apiRequestHistory');
+    renderRequestHistory();
+    showToast('Request history cleared', 'success');
 }

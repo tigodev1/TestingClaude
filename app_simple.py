@@ -6,6 +6,7 @@ Bulletproof version with minimal dependencies
 import os
 import json
 import sqlite3
+import flask
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
@@ -2204,6 +2205,344 @@ def proxy_auth_inventory_check(user_id):
         return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
     roblox_url = f"https://inventory.roblox.com/v1/users/{user_id}/can-view-inventory"
     return jsonify(make_proxy_request(roblox_url, 'auth/inventory-check')[0]), make_proxy_request(roblox_url, 'auth/inventory-check')[1]
+
+
+# ===== DEVEX CALCULATOR =====
+@app.route('/api/devex/calculate', methods=['POST'])
+def calculate_devex():
+    """Calculate DevEx conversion rates"""
+    data = request.get_json()
+    robux = float(data.get('robux', 0))
+
+    # DevEx rate: $0.0035 per Robux (as of 2024)
+    # This is the standard rate for qualified developers
+    devex_rate = 0.0035
+    usd = robux * devex_rate
+
+    # Also calculate marketplace fees
+    marketplace_fee = 0.30  # 30% marketplace fee
+    after_fees = robux * (1 - marketplace_fee)
+    after_fees_usd = after_fees * devex_rate
+
+    # Premium payouts (70% to creator)
+    premium_payout_rate = 0.70
+
+    return jsonify({
+        'robux': robux,
+        'usd_gross': round(usd, 2),
+        'usd_after_fees': round(after_fees_usd, 2),
+        'marketplace_fee_percent': marketplace_fee * 100,
+        'devex_rate': devex_rate,
+        'premium_payout_rate': premium_payout_rate * 100,
+        'conversions': {
+            '1000_robux': round(1000 * devex_rate, 2),
+            '10000_robux': round(10000 * devex_rate, 2),
+            '100000_robux': round(100000 * devex_rate, 2),
+            '1000000_robux': round(1000000 * devex_rate, 2)
+        }
+    })
+
+
+@app.route('/api/devex/reverse', methods=['POST'])
+def reverse_devex():
+    """Calculate how much Robux needed for target USD"""
+    data = request.get_json()
+    target_usd = float(data.get('usd', 0))
+    devex_rate = 0.0035
+
+    robux_needed = target_usd / devex_rate
+    # Account for marketplace fees
+    robux_before_fees = robux_needed / 0.70  # 30% fee
+
+    return jsonify({
+        'target_usd': target_usd,
+        'robux_needed_direct': round(robux_needed),
+        'robux_needed_with_fees': round(robux_before_fees),
+        'devex_rate': devex_rate
+    })
+
+
+# ===== SITE INFORMATION =====
+@app.route('/api/site-info')
+def get_site_info():
+    """Get site information and creator contact"""
+    return jsonify({
+        'name': 'Tigos API Playground',
+        'version': '2.0.0',
+        'creator': 'Tigo',
+        'contact': {
+            'discord': 't1g_0o',
+            'email': 'tigodevemail@gmail.com'
+        },
+        'features': [
+            'DataStore Management (Standard & Ordered)',
+            'Bulk Operations with Progress Tracking',
+            '60+ Roblox API Proxy Endpoints',
+            'DevEx Calculator',
+            'Real-time Analytics Dashboard',
+            'User Lookup with Full Profile Data',
+            'Game Server Browser',
+            'Cookie-based Authentication',
+            '5 Animated Themes',
+            'Export/Import Functionality'
+        ],
+        'stats': {
+            'total_operations': get_total_operations(),
+            'uptime': 'Active'
+        }
+    })
+
+
+def get_total_operations():
+    """Get total operations count"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM operations')
+        count = c.fetchone()[0]
+        conn.close()
+        return count
+    except:
+        return 0
+
+
+# ===== ADVANCED ANALYTICS =====
+@app.route('/api/analytics/comprehensive')
+def get_comprehensive_analytics():
+    """Get comprehensive analytics data"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        # Operations by type
+        c.execute('''SELECT operation, COUNT(*) as count,
+                     SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful
+                     FROM operations GROUP BY operation ORDER BY count DESC''')
+        ops_by_type = [{'operation': row[0], 'count': row[1], 'successful': row[2]} for row in c.fetchall()]
+
+        # Operations over time (last 30 days)
+        c.execute('''SELECT DATE(timestamp) as date, COUNT(*) as count
+                     FROM operations
+                     WHERE timestamp >= datetime('now', '-30 days')
+                     GROUP BY date ORDER BY date''')
+        ops_timeline = [{'date': row[0], 'count': row[1]} for row in c.fetchall()]
+
+        # Most active datastores
+        c.execute('''SELECT datastore, COUNT(*) as count
+                     FROM operations WHERE datastore != ''
+                     GROUP BY datastore ORDER BY count DESC LIMIT 10''')
+        top_datastores = [{'name': row[0], 'operations': row[1]} for row in c.fetchall()]
+
+        # Success rate over time
+        c.execute('''SELECT DATE(timestamp) as date,
+                     ROUND(AVG(success) * 100, 2) as success_rate
+                     FROM operations
+                     WHERE timestamp >= datetime('now', '-7 days')
+                     GROUP BY date ORDER BY date''')
+        success_timeline = [{'date': row[0], 'rate': row[1]} for row in c.fetchall()]
+
+        # Hourly distribution
+        c.execute('''SELECT strftime('%H', timestamp) as hour, COUNT(*) as count
+                     FROM operations GROUP BY hour ORDER BY hour''')
+        hourly_dist = [{'hour': int(row[0]), 'count': row[1]} for row in c.fetchall()]
+
+        conn.close()
+
+        return jsonify({
+            'operations_by_type': ops_by_type,
+            'operations_timeline': ops_timeline,
+            'top_datastores': top_datastores,
+            'success_rate_timeline': success_timeline,
+            'hourly_distribution': hourly_dist,
+            'generated_at': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ===== OPENCLOUD V2 SUBSCRIPTIONS (Placeholder) =====
+@app.route('/api/opencloud/v2/info')
+def opencloud_v2_info():
+    """Information about OpenCloud v2 APIs"""
+    return jsonify({
+        'version': '2.0',
+        'available_apis': [
+            {
+                'name': 'Messaging Service',
+                'endpoint': '/v2/universes/{universeId}/topics/{topic}',
+                'description': 'Publish messages to in-game topics',
+                'requires_api_key': True
+            },
+            {
+                'name': 'User Restrictions',
+                'endpoint': '/v2/universes/{universeId}/user-restrictions',
+                'description': 'Manage user bans and restrictions',
+                'requires_api_key': True
+            },
+            {
+                'name': 'Place Management',
+                'endpoint': '/v2/universes/{universeId}/places',
+                'description': 'Manage place settings and publishing',
+                'requires_api_key': True
+            },
+            {
+                'name': 'Inventory',
+                'endpoint': '/v2/users/{userId}/inventory-items',
+                'description': 'Access user inventory data',
+                'requires_api_key': True
+            }
+        ],
+        'note': 'OpenCloud v2 APIs require specific API key permissions configured in Creator Hub'
+    })
+
+
+@app.route('/proxy/games/<universe_id>/analytics')
+def get_game_analytics(universe_id):
+    """Get comprehensive game analytics - combined endpoint"""
+    try:
+        analytics = {}
+
+        # Get votes
+        votes_url = f'https://games.roblox.com/v1/games/{universe_id}/votes'
+        votes_resp = requests.get(votes_url, timeout=30)
+        if votes_resp.status_code == 200:
+            analytics['votes'] = votes_resp.json()
+
+        # Get favorites count
+        fav_url = f'https://games.roblox.com/v1/games/{universe_id}/favorites/count'
+        fav_resp = requests.get(fav_url, timeout=30)
+        if fav_resp.status_code == 200:
+            analytics['favorites'] = fav_resp.json()
+
+        # Get game passes
+        passes_url = f'https://games.roblox.com/v1/games/{universe_id}/game-passes'
+        passes_resp = requests.get(passes_url, timeout=30)
+        if passes_resp.status_code == 200:
+            analytics['game_passes'] = passes_resp.json()
+
+        # Get servers info
+        servers_url = f'https://games.roblox.com/v1/games/{universe_id}/servers/Public'
+        servers_resp = requests.get(servers_url, params={'limit': 10}, timeout=30)
+        if servers_resp.status_code == 200:
+            servers_data = servers_resp.json()
+            analytics['servers'] = {
+                'sample': servers_data.get('data', [])[:5],
+                'total_players': sum(s.get('playing', 0) for s in servers_data.get('data', []))
+            }
+
+        return jsonify({
+            'universe_id': universe_id,
+            'analytics': analytics,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/proxy/presence/batch', methods=['POST'])
+def get_batch_presence():
+    """Get presence for multiple users at once"""
+    data = request.get_json()
+    user_ids = data.get('userIds', [])
+
+    if not user_ids:
+        return jsonify({'error': 'userIds required'}), 400
+
+    try:
+        url = 'https://presence.roblox.com/v1/presence/users'
+        response = requests.post(url, json={'userIds': user_ids}, timeout=30)
+        return jsonify(response.json()), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/proxy/economy/currency')
+def get_currency_exchange():
+    """Get current Robux exchange rate information"""
+    return jsonify({
+        'robux_to_usd': 0.0035,  # DevEx rate
+        'usd_to_robux_purchase': 0.0125,  # Purchase rate (80 Robux per $1)
+        'marketplace_fee': 0.30,  # 30% fee
+        'premium_stipend': {
+            'Premium 450': 450,
+            'Premium 1000': 1000,
+            'Premium 2200': 2200
+        },
+        'last_updated': '2024-11-01',
+        'note': 'Exchange rates may vary. DevEx rate is fixed at $0.0035 per Robux.'
+    })
+
+
+@app.route('/api/system/health')
+def system_health():
+    """Get system health information"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    # Get database size
+    c.execute("SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()")
+    db_size = c.fetchone()[0]
+
+    # Get total operations
+    c.execute("SELECT COUNT(*) FROM operations")
+    total_ops = c.fetchone()[0]
+
+    # Get recent error rate
+    c.execute("""
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as errors
+        FROM operations
+        WHERE timestamp > datetime('now', '-1 hour')
+    """)
+    recent = c.fetchone()
+    error_rate = (recent[1] / recent[0] * 100) if recent[0] > 0 else 0
+
+    conn.close()
+
+    return jsonify({
+        'status': 'healthy' if error_rate < 10 else 'degraded',
+        'database_size_mb': round(db_size / (1024 * 1024), 2),
+        'total_operations': total_ops,
+        'recent_error_rate': round(error_rate, 2),
+        'uptime': 'N/A',
+        'version': '2.0.0',
+        'python_version': sys.version.split()[0],
+        'flask_version': flask.__version__
+    })
+
+
+@app.route('/api/export/operations')
+def export_operations():
+    """Export all operations as JSON"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT timestamp, operation, datastore, key, details, success
+        FROM operations
+        ORDER BY timestamp DESC
+        LIMIT 10000
+    """)
+
+    operations = []
+    for row in c.fetchall():
+        operations.append({
+            'timestamp': row[0],
+            'operation': row[1],
+            'datastore': row[2],
+            'key': row[3],
+            'details': row[4],
+            'success': bool(row[5])
+        })
+
+    conn.close()
+
+    return jsonify({
+        'export_date': datetime.now().isoformat(),
+        'total_operations': len(operations),
+        'operations': operations
+    })
 
 
 if __name__ == '__main__':

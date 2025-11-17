@@ -2438,3 +2438,61 @@ function clearRequestHistory() {
     renderRequestHistory();
     showToast('Request history cleared', 'success');
 }
+
+// ===== DEVEX CALCULATOR =====
+function calculateDevEx() {
+    const robuxInput = document.getElementById('devexRobuxInput');
+    const robux = parseFloat(robuxInput.value) || 0;
+    
+    const devexRate = 0.0035; // $0.0035 per Robux
+    const marketplaceFee = 0.30; // 30% fee
+    
+    const grossUSD = robux * devexRate;
+    const feeAmount = grossUSD * marketplaceFee;
+    const netUSD = grossUSD - feeAmount;
+    
+    document.getElementById('devexGrossUSD').textContent = '$' + grossUSD.toFixed(2);
+    document.getElementById('devexFeeAmount').textContent = '-$' + feeAmount.toFixed(2);
+    document.getElementById('devexNetUSD').textContent = '$' + netUSD.toFixed(2);
+}
+
+function calculateReverseDevEx() {
+    const usdInput = document.getElementById('devexUSDInput');
+    const targetUSD = parseFloat(usdInput.value) || 0;
+    
+    const devexRate = 0.0035; // $0.0035 per Robux
+    const marketplaceFee = 0.30; // 30% fee
+    
+    // Calculate Robux needed for gross amount (before considering marketplace fee)
+    const grossRobuxNeeded = Math.ceil(targetUSD / devexRate);
+    
+    // Account for marketplace fee (need more Robux because you only keep 70%)
+    const totalRobuxNeeded = Math.ceil(grossRobuxNeeded / (1 - marketplaceFee));
+    const feeRobux = totalRobuxNeeded - grossRobuxNeeded;
+    
+    document.getElementById('reverseRobuxGross').textContent = 'R$' + grossRobuxNeeded.toLocaleString();
+    document.getElementById('reverseFeeRobux').textContent = '+R$' + feeRobux.toLocaleString();
+    document.getElementById('reverseRobuxTotal').textContent = 'R$' + totalRobuxNeeded.toLocaleString();
+}
+
+// ===== UTILITY FUNCTIONS =====
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast(`Copied "${text}" to clipboard!`, 'success');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        showToast('Failed to copy to clipboard', 'error');
+    });
+}
+
+// Export and Import Modal Functions
+function exportModal() {
+    showPage('bulk');
+    showToast('Navigate to Bulk Operations for export', 'info');
+}
+
+function importModal() {
+    showPage('bulk');
+    showToast('Navigate to Bulk Operations for import', 'info');
+}
+

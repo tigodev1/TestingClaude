@@ -231,6 +231,10 @@
                     <i class="fas fa-id-card"></i>
                     <span>User Lookup</span>
                 </div>
+                <div class="nav-item" data-page="devex">
+                    <i class="fas fa-calculator"></i>
+                    <span>DevEx Calculator</span>
+                </div>
                 <div class="nav-item" data-page="analytics">
                     <i class="fas fa-chart-pie"></i>
                     <span>Analytics</span>
@@ -248,6 +252,10 @@
                 <div class="nav-item" data-page="settings">
                     <i class="fas fa-sliders"></i>
                     <span>Settings</span>
+                </div>
+                <div class="nav-item" data-page="info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>About</span>
                 </div>
             </nav>
 
@@ -1129,72 +1137,132 @@
 
             <!-- Analytics Page -->
             <div id="page-analytics" class="page">
-                <h2 style="margin-bottom: 24px;">Analytics & Insights</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            <i class="fas fa-chart-pie" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            Analytics & Insights
+                        </h2>
+                        <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 14px;">Comprehensive performance metrics and usage patterns</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="loadAnalyticsCharts()" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border: none;">
+                        <i class="fas fa-sync"></i> Refresh All
+                    </button>
+                </div>
 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="analyticsSuccessRate">0%</div>
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px;">
+                    <div class="stat-card" style="background: linear-gradient(135deg, rgba(67,233,123,0.1) 0%, rgba(56,249,215,0.1) 100%); border: 1px solid rgba(67,233,123,0.2);">
+                        <div class="stat-value" id="analyticsSuccessRate" style="color: #43e97b;">0%</div>
                         <div class="stat-label">Success Rate</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="analyticsAvgResponse">0ms</div>
-                        <div class="stat-label">Avg Response Time</div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, rgba(79,172,254,0.1) 0%, rgba(0,242,254,0.1) 100%); border: 1px solid rgba(79,172,254,0.2);">
+                        <div class="stat-value" id="analyticsAvgResponse" style="color: #4facfe;">0ms</div>
+                        <div class="stat-label">Avg Response</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="analyticsReadOps">0</div>
-                        <div class="stat-label">Read Operations</div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%); border: 1px solid rgba(102,126,234,0.2);">
+                        <div class="stat-value" id="analyticsReadOps" style="color: #667eea;">0</div>
+                        <div class="stat-label">Read Ops</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="analyticsWriteOps">0</div>
-                        <div class="stat-label">Write Operations</div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, rgba(240,147,251,0.1) 0%, rgba(245,87,108,0.1) 100%); border: 1px solid rgba(240,147,251,0.2);">
+                        <div class="stat-value" id="analyticsWriteOps" style="color: #f093fb;">0</div>
+                        <div class="stat-label">Write Ops</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,170,0,0.1) 100%); border: 1px solid rgba(255,215,0,0.2);">
+                        <div class="stat-value" id="analyticsDeleteOps" style="color: #ffd700;">0</div>
+                        <div class="stat-label">Delete Ops</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, rgba(245,87,108,0.1) 0%, rgba(239,68,68,0.1) 100%); border: 1px solid rgba(245,87,108,0.2);">
+                        <div class="stat-value" id="analyticsErrorCount" style="color: #f5576c;">0</div>
+                        <div class="stat-label">Total Errors</div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Operations Over Time</h3>
-                        <select class="form-input" style="width: auto;" id="chartTimeRange" onchange="loadAnalyticsCharts()">
+                <div class="card" style="border: 1px solid rgba(67,233,123,0.2);">
+                    <div class="card-header" style="background: linear-gradient(135deg, rgba(67,233,123,0.05) 0%, rgba(56,249,215,0.05) 100%);">
+                        <h3 class="card-title"><i class="fas fa-chart-line" style="color: #43e97b;"></i> Operations Timeline</h3>
+                        <select class="form-input" style="width: auto; border: 1px solid rgba(67,233,123,0.3);" id="chartTimeRange" onchange="loadAnalyticsCharts()">
                             <option value="7">Last 7 Days</option>
                             <option value="14">Last 14 Days</option>
                             <option value="30" selected>Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
                         </select>
                     </div>
-                    <div style="height: 300px; position: relative;">
+                    <div style="height: 350px; position: relative; padding: 16px;">
                         <canvas id="operationsChart"></canvas>
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Operation Types</h3>
+                    <div class="card" style="border: 1px solid rgba(102,126,234,0.2);">
+                        <div class="card-header" style="background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);">
+                            <h3 class="card-title"><i class="fas fa-chart-pie" style="color: #667eea;"></i> Operation Distribution</h3>
                         </div>
-                        <div style="height: 250px; position: relative;">
+                        <div style="height: 280px; position: relative; padding: 16px;">
                             <canvas id="operationTypesChart"></canvas>
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Top DataStores</h3>
+                    <div class="card" style="border: 1px solid rgba(240,147,251,0.2);">
+                        <div class="card-header" style="background: linear-gradient(135deg, rgba(240,147,251,0.05) 0%, rgba(245,87,108,0.05) 100%);">
+                            <h3 class="card-title"><i class="fas fa-trophy" style="color: #f093fb;"></i> Top DataStores</h3>
                         </div>
-                        <div style="height: 250px; position: relative;">
+                        <div style="height: 280px; position: relative; padding: 16px;">
                             <canvas id="topDatastoresChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Error Analysis</h3>
+                <div class="card" style="margin-top: 24px; border: 1px solid rgba(79,172,254,0.2);">
+                    <div class="card-header" style="background: linear-gradient(135deg, rgba(79,172,254,0.05) 0%, rgba(0,242,254,0.05) 100%);">
+                        <h3 class="card-title"><i class="fas fa-clock" style="color: #4facfe;"></i> Hourly Activity Pattern</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                        <div id="hourlyHeatmap" style="display: grid; grid-template-columns: repeat(24, 1fr); gap: 4px;">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-secondary);">
+                            <span>12 AM</span>
+                            <span>6 AM</span>
+                            <span>12 PM</span>
+                            <span>6 PM</span>
+                            <span>11 PM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px; border: 1px solid rgba(245,87,108,0.2);">
+                    <div class="card-header" style="background: linear-gradient(135deg, rgba(245,87,108,0.05) 0%, rgba(239,68,68,0.05) 100%);">
+                        <h3 class="card-title"><i class="fas fa-exclamation-triangle" style="color: #f5576c;"></i> Error Analysis</h3>
                         <button class="btn btn-sm btn-secondary" onclick="loadErrorAnalysis()">
                             <i class="fas fa-sync"></i> Refresh
                         </button>
                     </div>
-                    <div id="errorAnalysis">
+                    <div id="errorAnalysis" style="padding: 16px;">
                         <div class="empty-state">
-                            <i class="fas fa-check-circle"></i>
-                            <p>No errors to analyze</p>
+                            <i class="fas fa-check-circle" style="color: #43e97b;"></i>
+                            <p>No errors to analyze - Great job!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-info-circle"></i> Performance Insights</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                        <div id="performanceInsights" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;">
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #43e97b;">
+                                <h4 style="margin: 0 0 8px; color: #43e97b; font-size: 14px;"><i class="fas fa-bolt"></i> Peak Hours</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 13px;" id="insightPeakHours">Loading...</p>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #4facfe;">
+                                <h4 style="margin: 0 0 8px; color: #4facfe; font-size: 14px;"><i class="fas fa-database"></i> Most Active Store</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 13px;" id="insightTopStore">Loading...</p>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #ffd700;">
+                                <h4 style="margin: 0 0 8px; color: #ffd700; font-size: 14px;"><i class="fas fa-fire"></i> Trend</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 13px;" id="insightTrend">Loading...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1227,6 +1295,270 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- DevEx Calculator Page -->
+            <div id="page-devex" class="page">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            <i class="fas fa-calculator" style="background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            DevEx Calculator
+                        </h2>
+                        <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 14px;">Calculate your Developer Exchange earnings and plan your income</p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div class="card" style="border: 2px solid rgba(255,215,0,0.3);">
+                        <div class="card-header" style="background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,170,0,0.1) 100%);">
+                            <h3 class="card-title"><i class="fas fa-coins" style="color: #ffd700;"></i> Robux to USD</h3>
+                        </div>
+                        <div style="padding: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">Robux Amount</label>
+                                <input type="number" class="form-input" id="devexRobuxInput" placeholder="Enter Robux amount" oninput="calculateDevEx()" style="border: 2px solid rgba(255,215,0,0.3); font-size: 18px; padding: 12px;">
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-top: 16px;">
+                                <div style="display: grid; gap: 16px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-secondary);">Gross USD:</span>
+                                        <span style="font-size: 24px; font-weight: 700; color: #43e97b;" id="devexGrossUSD">$0.00</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-secondary);">Marketplace Fee (30%):</span>
+                                        <span style="font-size: 16px; color: #f5576c;" id="devexFeeAmount">-$0.00</span>
+                                    </div>
+                                    <div style="border-top: 2px solid var(--border); padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-primary); font-weight: 600;">Net Earnings:</span>
+                                        <span style="font-size: 32px; font-weight: 700; color: #ffd700;" id="devexNetUSD">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px; padding: 12px; background: rgba(255,215,0,0.1); border-radius: 8px;">
+                                <small style="color: var(--text-secondary);">
+                                    <i class="fas fa-info-circle" style="color: #ffd700;"></i>
+                                    Current DevEx Rate: <strong style="color: #ffd700;">$0.0035 per Robux</strong> (as of 2024)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="border: 2px solid rgba(67,233,123,0.3);">
+                        <div class="card-header" style="background: linear-gradient(135deg, rgba(67,233,123,0.1) 0%, rgba(56,249,215,0.1) 100%);">
+                            <h3 class="card-title"><i class="fas fa-dollar-sign" style="color: #43e97b;"></i> USD to Robux (Reverse)</h3>
+                        </div>
+                        <div style="padding: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">Target USD Amount</label>
+                                <input type="number" class="form-input" id="devexUSDInput" placeholder="How much USD do you want?" oninput="calculateReverseDevEx()" style="border: 2px solid rgba(67,233,123,0.3); font-size: 18px; padding: 12px;">
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-top: 16px;">
+                                <div style="display: grid; gap: 16px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-secondary);">Robux Needed (Gross):</span>
+                                        <span style="font-size: 20px; font-weight: 700; color: #4facfe;" id="reverseRobuxGross">R$0</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-secondary);">Account for 30% Fee:</span>
+                                        <span style="font-size: 16px; color: #f5576c;" id="reverseFeeRobux">+R$0</span>
+                                    </div>
+                                    <div style="border-top: 2px solid var(--border); padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-primary); font-weight: 600;">Total Robux to Earn:</span>
+                                        <span style="font-size: 32px; font-weight: 700; color: #43e97b;" id="reverseRobuxTotal">R$0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-table"></i> Quick Reference Table</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Robux</th>
+                                        <th>Gross USD</th>
+                                        <th>After 30% Fee</th>
+                                        <th>Net USD</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>10,000</td><td>$35.00</td><td>$10.50 fee</td><td style="color: #43e97b; font-weight: 600;">$24.50</td></tr>
+                                    <tr><td>50,000</td><td>$175.00</td><td>$52.50 fee</td><td style="color: #43e97b; font-weight: 600;">$122.50</td></tr>
+                                    <tr><td>100,000</td><td>$350.00</td><td>$105.00 fee</td><td style="color: #43e97b; font-weight: 600;">$245.00</td></tr>
+                                    <tr><td>500,000</td><td>$1,750.00</td><td>$525.00 fee</td><td style="color: #43e97b; font-weight: 600;">$1,225.00</td></tr>
+                                    <tr><td>1,000,000</td><td>$3,500.00</td><td>$1,050.00 fee</td><td style="color: #43e97b; font-weight: 600;">$2,450.00</td></tr>
+                                    <tr><td>10,000,000</td><td>$35,000.00</td><td>$10,500.00 fee</td><td style="color: #43e97b; font-weight: 600;">$24,500.00</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px; border: 1px solid rgba(79,172,254,0.2);">
+                    <div class="card-header" style="background: linear-gradient(135deg, rgba(79,172,254,0.05) 0%, rgba(0,242,254,0.05) 100%);">
+                        <h3 class="card-title"><i class="fas fa-book" style="color: #4facfe;"></i> DevEx Requirements</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="color: #43e97b;"></i>
+                                <span>Must be 13+ years old with verified ID</span>
+                            </li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="color: #43e97b;"></i>
+                                <span>Minimum 30,000 Robux to cash out ($105 after fees)</span>
+                            </li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="color: #43e97b;"></i>
+                                <span>Active Roblox Premium membership required</span>
+                            </li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="color: #43e97b;"></i>
+                                <span>Account in good standing (no violations)</span>
+                            </li>
+                            <li style="padding: 8px 0; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="color: #43e97b;"></i>
+                                <span>Must have Tipalti account for payments</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Information/About Page -->
+            <div id="page-info" class="page">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            <i class="fas fa-info-circle" style="background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            About Tigos API Playground
+                        </h2>
+                        <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 14px;">Your all-in-one toolkit for Roblox development</p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div class="card" style="border: 2px solid rgba(102,126,234,0.3);">
+                        <div class="card-header" style="background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);">
+                            <h3 class="card-title"><i class="fas fa-user" style="color: #667eea;"></i> Creator</h3>
+                        </div>
+                        <div style="padding: 24px; text-align: center;">
+                            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-code" style="font-size: 40px; color: white;"></i>
+                            </div>
+                            <h3 style="margin: 0 0 8px; color: var(--text-primary); font-size: 24px;">Tigo</h3>
+                            <p style="color: var(--text-secondary); margin: 0;">Full-Stack Developer & Roblox Enthusiast</p>
+                        </div>
+                    </div>
+
+                    <div class="card" style="border: 2px solid rgba(88,101,242,0.3);">
+                        <div class="card-header" style="background: linear-gradient(135deg, rgba(88,101,242,0.1) 0%, rgba(114,137,218,0.1) 100%);">
+                            <h3 class="card-title"><i class="fab fa-discord" style="color: #5865F2;"></i> Contact</h3>
+                        </div>
+                        <div style="padding: 24px;">
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                    <i class="fab fa-discord" style="font-size: 24px; color: #5865F2;"></i>
+                                    <div>
+                                        <div style="font-size: 12px; color: var(--text-secondary);">Discord</div>
+                                        <div style="font-size: 18px; font-weight: 600; color: var(--text-primary);">t1g_0o</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('t1g_0o')" style="width: 100%;">
+                                    <i class="fas fa-copy"></i> Copy Username
+                                </button>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                    <i class="fas fa-envelope" style="font-size: 24px; color: #f093fb;"></i>
+                                    <div>
+                                        <div style="font-size: 12px; color: var(--text-secondary);">Email</div>
+                                        <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">tigodevemail@gmail.com</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('tigodevemail@gmail.com')" style="width: 100%;">
+                                    <i class="fas fa-copy"></i> Copy Email
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-star"></i> Features</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #667eea;">
+                                <h4 style="margin: 0 0 8px; color: #667eea;"><i class="fas fa-database"></i> DataStore Management</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Browse, edit, backup, and manage Standard & Ordered DataStores with full CRUD operations</p>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #f093fb;">
+                                <h4 style="margin: 0 0 8px; color: #f093fb;"><i class="fas fa-terminal"></i> 60+ API Endpoints</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Test and explore Roblox APIs including users, groups, games, economy, and more</p>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #43e97b;">
+                                <h4 style="margin: 0 0 8px; color: #43e97b;"><i class="fas fa-chart-pie"></i> Real-time Analytics</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Track operations, success rates, and performance with interactive charts</p>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #ffd700;">
+                                <h4 style="margin: 0 0 8px; color: #ffd700;"><i class="fas fa-calculator"></i> DevEx Calculator</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Calculate your earnings with accurate DevEx rates and fee calculations</p>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #4facfe;">
+                                <h4 style="margin: 0 0 8px; color: #4facfe;"><i class="fas fa-id-card"></i> User Lookup</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Explore detailed user profiles, games, badges, friends, and username history</p>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 4px solid #fa709a;">
+                                <h4 style="margin: 0 0 8px; color: #fa709a;"><i class="fas fa-palette"></i> 5 Animated Themes</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Dark, Cyberpunk, Space, Matrix, and Sunset themes with animated backgrounds</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px; border: 1px solid rgba(67,233,123,0.2);">
+                    <div class="card-header" style="background: linear-gradient(135deg, rgba(67,233,123,0.05) 0%, rgba(56,249,215,0.05) 100%);">
+                        <h3 class="card-title"><i class="fas fa-code-branch" style="color: #43e97b;"></i> Version Info</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                            <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 12px; color: var(--text-secondary);">Version</div>
+                                <div style="font-size: 20px; font-weight: 600; color: #43e97b;">2.0.0</div>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 12px; color: var(--text-secondary);">Last Updated</div>
+                                <div style="font-size: 20px; font-weight: 600; color: #4facfe;">Nov 2025</div>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 12px; color: var(--text-secondary);">API Version</div>
+                                <div style="font-size: 20px; font-weight: 600; color: #f093fb;">OpenCloud v1</div>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 12px; color: var(--text-secondary);">Status</div>
+                                <div style="font-size: 20px; font-weight: 600; color: #ffd700;">Active</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 32px; padding: 24px; background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(240,147,251,0.1) 100%); border-radius: 16px;">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 16px;">
+                        <i class="fas fa-heart" style="color: #f5576c;"></i> Built with passion for the Roblox developer community
+                    </p>
+                    <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 14px;">
+                        © 2025 Tigo. All rights reserved.
+                    </p>
                 </div>
             </div>
 
@@ -1373,5 +1705,6 @@
 
     <script src="/static/js/app_production.js"></script>
     <script src="/static/js/analytics.js"></script>
+    <script src="/static/js/analytics_enhanced.js"></script>
 </body>
 </html>

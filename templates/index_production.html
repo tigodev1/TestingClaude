@@ -679,29 +679,38 @@
                         <p style="margin-bottom: 16px; color: var(--text-secondary);">
                             Share these proxy endpoints with your friends! All requests are cached (60s TTL) and rate limited (100 req/min per IP).
                         </p>
-                        <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 12px; line-height: 1.8;">
+                        <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 11px; line-height: 1.6;">
                             <div style="margin-bottom: 12px;">
                                 <strong style="color: var(--accent-primary);">User Endpoints:</strong><br>
-                                <code>GET /proxy/users/{userId}</code><br>
-                                <code>POST /proxy/users/username</code><br>
-                                <code>GET /proxy/users/{userId}/games</code><br>
-                                <code>GET /proxy/users/{userId}/groups</code>
+                                <code>GET /proxy/users/{userId}</code> - User profile info<br>
+                                <code>POST /proxy/users/username</code> - Resolve username to ID<br>
+                                <code>GET /proxy/users/{userId}/games</code> - User's created games<br>
+                                <code>GET /proxy/users/{userId}/presence</code> - Online status<br>
+                                <code>GET /proxy/users/{userId}/badges</code> - User's badges<br>
+                                <code>GET /proxy/users/{userId}/friends</code> - Friends list<br>
+                                <code>GET /proxy/inventory/{userId}?assetTypes=...</code> - User inventory
                             </div>
                             <div style="margin-bottom: 12px;">
                                 <strong style="color: var(--success);">Group Endpoints:</strong><br>
-                                <code>GET /proxy/groups/{groupId}</code><br>
-                                <code>GET /proxy/groups/{groupId}/games</code>
+                                <code>GET /proxy/groups/{groupId}/games</code> - Group's games<br>
+                                <code>GET /proxy/groups/{groupId}/roles</code> - Group roles<br>
+                                <code>GET /proxy/groups/{groupId}/members</code> - Group members
                             </div>
                             <div style="margin-bottom: 12px;">
                                 <strong style="color: var(--warning);">Game Endpoints:</strong><br>
-                                <code>GET /proxy/games?universeIds=id1,id2</code><br>
-                                <code>GET /proxy/games/votes?universeIds=id1,id2</code>
+                                <code>GET /proxy/games/{universeId}/servers</code> - Active servers<br>
+                                <code>GET /proxy/games/{universeId}/passes</code> - Game passes<br>
+                                <code>GET /proxy/games/search?keyword=...</code> - Search games
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: var(--info);">Asset & Catalog:</strong><br>
+                                <code>GET /proxy/assets/{assetId}</code> - Asset details<br>
+                                <code>GET /proxy/badges/{badgeId}</code> - Badge info<br>
+                                <code>GET /proxy/catalog/search?keyword=...</code> - Search catalog
                             </div>
                             <div>
-                                <strong style="color: var(--info);">Thumbnail Endpoints:</strong><br>
-                                <code>GET /proxy/thumbnails/users?userIds=id1,id2</code><br>
-                                <code>GET /proxy/thumbnails/games?universeIds=id1,id2</code><br>
-                                <code>GET /proxy/thumbnails/groups?groupIds=id1,id2</code>
+                                <strong style="color: #ff6b9d;">Thumbnails:</strong><br>
+                                <code>GET /proxy/thumbnails/games?universeIds=id1,id2</code> - Batch game icons
                             </div>
                         </div>
                     </div>

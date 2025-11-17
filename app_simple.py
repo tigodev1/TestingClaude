@@ -1020,12 +1020,13 @@ def get_user_groups():
 
 @app.route('/api/user/group-games')
 def get_user_group_games():
-    """Get all games from groups the user has access to"""
+    """Get all games from groups the user has HIGH RANK in (100+)"""
     if not cloud_api:
         return jsonify({'error': 'API not configured'}), 400
 
     try:
         user_id = request.args.get('user_id', '')
+        min_rank = int(request.args.get('min_rank', 100))  # Default: only show if rank 100+
         if not user_id:
             return jsonify({'error': 'User ID required'}), 400
 
@@ -1037,8 +1038,16 @@ def get_user_group_games():
 
         for group_entry in groups_data.get('data', []):
             group = group_entry.get('group', {})
+            role = group_entry.get('role', {})
+            role_rank = role.get('rank', 0)
+
+            # Only include groups where user has high rank (developer/admin access)
+            if role_rank < min_rank:
+                continue
+
             group_id = str(group.get('id', ''))
             group_name = group.get('name', 'Unknown Group')
+            role_name = role.get('name', 'Member')
 
             if not group_id:
                 continue
@@ -1065,7 +1074,9 @@ def get_user_group_games():
                             'downvotes': 0,
                             'thumbnail': '',
                             'groupName': group_name,
-                            'groupId': group_id
+                            'groupId': group_id,
+                            'userRole': role_name,
+                            'userRank': role_rank
                         })
             except:
                 continue  # Skip groups we can't fetch games for
@@ -1347,6 +1358,235 @@ def proxy_game_thumbnails():
         return jsonify(proxy_cache[cache_key]['data'])
     data, status, response_time = proxy_roblox_request(roblox_url, params=params)
     log_proxy_request(client_ip, '/proxy/thumbnails/games', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/presence')
+def proxy_user_presence(user_id):
+    """Get user presence (online status)"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    roblox_url = "https://presence.roblox.com/v1/presence/users"
+    data, status, response_time = proxy_roblox_request(roblox_url, method='POST', json_data={'userIds': [int(user_id)]})
+    log_proxy_request(client_ip, f'/proxy/users/{user_id}/presence', roblox_url, 'POST', status, response_time)
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/badges')
+def proxy_user_badges(user_id):
+    """Get user badges"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    limit = request.args.get('limit', 100)
+    roblox_url = f"https://badges.roblox.com/v1/users/{user_id}/badges"
+    params = {'limit': limit, 'sortOrder': 'Desc'}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/users/{user_id}/badges', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, f'/proxy/users/{user_id}/badges', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/friends')
+def proxy_user_friends(user_id):
+    """Get user friends list"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    roblox_url = f"https://friends.roblox.com/v1/users/{user_id}/friends"
+    cache_key = get_proxy_cache_key(roblox_url)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/users/{user_id}/friends', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url)
+    log_proxy_request(client_ip, f'/proxy/users/{user_id}/friends', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/<universe_id>/servers')
+def proxy_game_servers(universe_id):
+    """Get game servers (active servers list)"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    limit = request.args.get('limit', 100)
+    server_type = request.args.get('serverType', 'Public')
+    roblox_url = f"https://games.roblox.com/v1/games/{universe_id}/servers/{server_type}"
+    params = {'limit': limit}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < 30:  # 30s cache for servers
+        log_proxy_request(client_ip, f'/proxy/games/{universe_id}/servers', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, f'/proxy/games/{universe_id}/servers', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/<universe_id>/passes')
+def proxy_game_passes(universe_id):
+    """Get game passes for a universe"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    roblox_url = f"https://games.roblox.com/v1/games/{universe_id}/game-passes"
+    params = {'limit': 100, 'sortOrder': 'Asc'}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/games/{universe_id}/passes', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, f'/proxy/games/{universe_id}/passes', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/assets/<asset_id>')
+def proxy_asset_info(asset_id):
+    """Get asset info"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    roblox_url = f"https://economy.roblox.com/v2/assets/{asset_id}/details"
+    cache_key = get_proxy_cache_key(roblox_url)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/assets/{asset_id}', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url)
+    log_proxy_request(client_ip, f'/proxy/assets/{asset_id}', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/badges/<badge_id>')
+def proxy_badge_info(badge_id):
+    """Get badge info"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    roblox_url = f"https://badges.roblox.com/v1/badges/{badge_id}"
+    cache_key = get_proxy_cache_key(roblox_url)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/badges/{badge_id}', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url)
+    log_proxy_request(client_ip, f'/proxy/badges/{badge_id}', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/groups/<group_id>/roles')
+def proxy_group_roles(group_id):
+    """Get group roles"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    roblox_url = f"https://groups.roblox.com/v1/groups/{group_id}/roles"
+    cache_key = get_proxy_cache_key(roblox_url)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/groups/{group_id}/roles', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url)
+    log_proxy_request(client_ip, f'/proxy/groups/{group_id}/roles', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/groups/<group_id>/members')
+def proxy_group_members(group_id):
+    """Get group members"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    limit = request.args.get('limit', 100)
+    sort_order = request.args.get('sortOrder', 'Asc')
+    roblox_url = f"https://groups.roblox.com/v1/groups/{group_id}/users"
+    params = {'limit': limit, 'sortOrder': sort_order}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/groups/{group_id}/members', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, f'/proxy/groups/{group_id}/members', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/catalog/search')
+def proxy_catalog_search():
+    """Search the catalog"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    keyword = request.args.get('keyword', '')
+    category = request.args.get('category', 'All')
+    limit = request.args.get('limit', 30)
+    roblox_url = "https://catalog.roblox.com/v1/search/items"
+    params = {'keyword': keyword, 'category': category, 'limit': limit}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, '/proxy/catalog/search', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, '/proxy/catalog/search', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/inventory/<user_id>')
+def proxy_user_inventory(user_id):
+    """Get user inventory"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    asset_type = request.args.get('assetType', 'Hat')
+    limit = request.args.get('limit', 100)
+    roblox_url = f"https://inventory.roblox.com/v2/users/{user_id}/inventory/{asset_type}"
+    params = {'limit': limit, 'sortOrder': 'Desc'}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/inventory/{user_id}', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, f'/proxy/inventory/{user_id}', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/search')
+def proxy_games_search():
+    """Search games"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    keyword = request.args.get('keyword', '')
+    limit = request.args.get('limit', 25)
+    roblox_url = "https://games.roblox.com/v1/games/list"
+    params = {'keyword': keyword, 'maxRows': limit, 'sortToken': 'relevanceDefault'}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, '/proxy/games/search', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, '/proxy/games/search', roblox_url, 'GET', status, response_time)
     if status == 200:
         proxy_cache[cache_key] = {'data': data, 'time': time.time()}
     return jsonify(data), status

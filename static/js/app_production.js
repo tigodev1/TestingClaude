@@ -9,16 +9,16 @@ let currentScope = 'global';
 let currentKey = '';
 let selectedEntries = new Set();
 let isConnected = false;
-let autoRefreshInterval = null;
+let lastKnownRateLimit = 300;
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DataStore Manager loaded');
     initNavigation();
     initTabs();
-    loadDashboard();
+    loadLocalStats(); // Only load local stats, not API
 
-    // Don't auto-refresh rate limits until connected
+    // Start disconnected
     updateConnectionStatus(false);
 });
 
@@ -154,13 +154,11 @@ function updateConnectionStatus(connected) {
         if (connected) {
             statusEl.className = 'status-indicator status-connected';
             statusEl.innerHTML = '<span class="status-dot"></span><span>Connected</span>';
-            startRateLimitMonitor();
         } else {
             statusEl.className = 'status-indicator status-disconnected';
             statusEl.innerHTML = '<span class="status-dot"></span><span>Not Connected</span>';
-            stopRateLimitMonitor();
             // Reset rate limit display
-            updateRateLimitDisplay({ remaining: 300, reset_in_seconds: 0 });
+            updateRateLimitDisplay(300);
         }
     }
 
@@ -170,36 +168,8 @@ function updateConnectionStatus(connected) {
     }
 }
 
-function startRateLimitMonitor() {
-    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-    autoRefreshInterval = setInterval(() => {
-        if (isConnected) updateRateLimitStatus();
-    }, 10000); // Every 10 seconds
-}
-
-function stopRateLimitMonitor() {
-    if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-        autoRefreshInterval = null;
-    }
-}
-
-async function updateRateLimitStatus() {
-    if (!isConnected) return;
-
-    try {
-        const response = await fetch('/api/request-log');
-        const data = await response.json();
-        if (data.rate_limit) {
-            updateRateLimitDisplay(data.rate_limit);
-        }
-    } catch (error) {
-        // Silently fail
-    }
-}
-
-function updateRateLimitDisplay(rateLimit) {
-    const remaining = rateLimit.remaining !== undefined ? rateLimit.remaining : 300;
+function updateRateLimitDisplay(remaining) {
+    lastKnownRateLimit = remaining;
     const percentage = (remaining / 300) * 100;
 
     const fillEl = document.getElementById('rateLimitFill');
@@ -207,6 +177,25 @@ function updateRateLimitDisplay(rateLimit) {
 
     if (fillEl) fillEl.style.width = `${percentage}%`;
     if (textEl) textEl.textContent = `${remaining}/300`;
+
+    // Color code based on remaining
+    if (fillEl) {
+        if (remaining > 200) {
+            fillEl.style.background = 'var(--success)';
+        } else if (remaining > 100) {
+            fillEl.style.background = 'var(--warning)';
+        } else {
+            fillEl.style.background = 'var(--danger)';
+        }
+    }
+}
+
+// Decrement rate limit locally (called after each API operation)
+function decrementRateLimit() {
+    if (lastKnownRateLimit > 0) {
+        lastKnownRateLimit--;
+        updateRateLimitDisplay(lastKnownRateLimit);
+    }
 }
 
 async function saveConfig() {
@@ -247,9 +236,9 @@ async function testConnection() {
         if (data.status === 'success') {
             showToast('Connected successfully!', 'success');
             updateConnectionStatus(true);
-            if (data.rate_limit) {
-                updateRateLimitDisplay(data.rate_limit);
-            }
+            // Reset rate limit to 300 on successful connection (minus 1 for this test)
+            updateRateLimitDisplay(299);
+            decrementRateLimit(); // Account for the test request
         } else {
             showToast(`Connection failed: ${data.message}`, 'error');
             updateConnectionStatus(false);
@@ -261,32 +250,27 @@ async function testConnection() {
 }
 
 // ===== DASHBOARD =====
-async function loadDashboard() {
-    await loadStats();
-    await loadHistory();
+function loadLocalStats() {
+    // Load stats from local database only (no Roblox API calls)
+    fetch('/api/stats')
+        .then(res => res.json())
+        .then(data => {
+            const ops = document.getElementById('statOperations');
+            const success = document.getElementById('statSuccess');
+            const failed = document.getElementById('statFailed');
+            const backups = document.getElementById('statBackups');
+
+            if (ops) ops.textContent = data.total_operations || 0;
+            if (success) success.textContent = data.successful_operations || 0;
+            if (failed) failed.textContent = data.failed_operations || 0;
+            if (backups) backups.textContent = data.total_backups || 0;
+        })
+        .catch(err => console.error('Stats error:', err));
 }
 
-async function loadStats() {
-    try {
-        const response = await fetch('/api/stats');
-        const data = await response.json();
-
-        const ops = document.getElementById('statOperations');
-        const success = document.getElementById('statSuccess');
-        const failed = document.getElementById('statFailed');
-        const backups = document.getElementById('statBackups');
-
-        if (ops) ops.textContent = data.total_operations || 0;
-        if (success) success.textContent = data.successful_operations || 0;
-        if (failed) failed.textContent = data.failed_operations || 0;
-        if (backups) backups.textContent = data.total_backups || 0;
-
-        if (data.rate_limit && isConnected) {
-            updateRateLimitDisplay(data.rate_limit);
-        }
-    } catch (error) {
-        console.error('Failed to load stats:', error);
-    }
+async function loadDashboard() {
+    loadLocalStats();
+    await loadHistory();
 }
 
 // ===== DATASTORES =====
@@ -339,6 +323,7 @@ async function loadAllDatastores() {
         `).join('');
 
         showToast(`Loaded ${data.count} datastores`, 'success');
+        decrementRateLimit(); // API call made
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
@@ -393,6 +378,7 @@ async function loadEntries() {
 
         displayEntries(data.keys || []);
         showToast(`Loaded ${(data.keys || []).length} entries`, 'success');
+        decrementRateLimit();
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
@@ -435,6 +421,9 @@ async function loadAllEntriesBtn() {
 
         displayEntries(data.keys || []);
         showToast(`Loaded ${data.count} entries`, 'success');
+        // Multiple API calls for pagination
+        const apiCalls = Math.ceil(data.count / 100) || 1;
+        for (let i = 0; i < apiCalls; i++) decrementRateLimit();
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
@@ -552,6 +541,7 @@ async function viewEntry(key) {
         if (attrsEl) attrsEl.value = JSON.stringify(data.metadata.attributes || {}, null, 2);
 
         showToast('Entry loaded', 'success');
+        decrementRateLimit();
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
@@ -592,6 +582,7 @@ async function saveEntry() {
         if (updatedEl) updatedEl.value = data.updated_time || '';
 
         showToast('Entry saved successfully!', 'success');
+        decrementRateLimit();
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
@@ -616,6 +607,7 @@ async function deleteEntry(key) {
         }
 
         showToast(`Entry "${key}" deleted`, 'success');
+        decrementRateLimit();
         loadEntries();
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');

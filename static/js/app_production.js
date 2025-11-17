@@ -1839,38 +1839,27 @@ async function lookupUser() {
                     : 0;
 
                 return `
-                    <div style="background: var(--bg-tertiary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)';" onmouseout="this.style.transform='';this.style.boxShadow='';">
+                    <div style="background: var(--bg-tertiary); border-radius: 10px; overflow: hidden; border: 1px solid var(--border);">
                         <div style="position: relative;">
-                            <img src="${game.thumbnail || ''}" alt="${escapeHtml(game.name)}" style="width: 100%; height: 180px; object-fit: cover; background: var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22512%22 height=%22512%22><rect fill=%22%23222%22 width=%22512%22 height=%22512%22/><text x=%22256%22 y=%22256%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2248%22>No Image</text></svg>'">
-                            <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 6px; font-size: 11px;">
-                                <span style="color: ${likeRatio >= 70 ? 'var(--success)' : likeRatio >= 50 ? 'var(--warning)' : 'var(--danger)'};">
-                                    <i class="fas fa-thumbs-up"></i> ${likeRatio}%
-                                </span>
+                            <img src="${game.thumbnail || ''}" alt="${escapeHtml(game.name)}" style="width: 100%; height: 150px; object-fit: cover; background: var(--bg-card);" onerror="this.style.opacity='0.3'">
+                            <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: ${likeRatio >= 70 ? '#10b981' : likeRatio >= 50 ? '#f59e0b' : '#ef4444'};">
+                                ${likeRatio}%
                             </div>
                             ${game.playing > 0 ? `
-                                <div style="position: absolute; bottom: 8px; left: 8px; background: var(--success); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: 600;">
-                                    <i class="fas fa-circle" style="font-size: 8px;"></i> ${formatLargeNumber(game.playing)} Playing
+                                <div style="position: absolute; bottom: 8px; left: 8px; background: #10b981; padding: 3px 8px; border-radius: 4px; font-size: 11px; color: white; font-weight: 600;">
+                                    ${formatLargeNumber(game.playing)} playing
                                 </div>
                             ` : ''}
                         </div>
-                        <div style="padding: 16px;">
-                            <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text-primary);">${escapeHtml(game.name)}</h4>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: 12px;">
-                                <div style="color: var(--text-secondary);">
-                                    <i class="fas fa-eye" style="color: var(--info);"></i> ${formatLargeNumber(game.visits)} visits
-                                </div>
-                                <div style="color: var(--text-secondary);">
-                                    <i class="fas fa-star" style="color: var(--warning);"></i> ${formatLargeNumber(game.favorites)} favs
-                                </div>
-                                <div style="color: var(--text-secondary);">
-                                    <i class="fas fa-thumbs-up" style="color: var(--success);"></i> ${formatLargeNumber(game.upvotes)}
-                                </div>
-                                <div style="color: var(--text-secondary);">
-                                    <i class="fas fa-thumbs-down" style="color: var(--danger);"></i> ${formatLargeNumber(game.downvotes)}
-                                </div>
+                        <div style="padding: 12px;">
+                            <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(game.name)}</h4>
+                            <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">
+                                <span><i class="fas fa-eye"></i> ${formatLargeNumber(game.visits)}</span>
+                                <span><i class="fas fa-heart"></i> ${formatLargeNumber(game.favorites)}</span>
+                                <span><i class="fas fa-thumbs-up"></i> ${formatLargeNumber(game.upvotes)}</span>
                             </div>
-                            <a href="https://www.roblox.com/games/${game.rootPlaceId || game.id}" target="_blank" style="display: block; background: linear-gradient(135deg, #00b06f, #00d47e); color: white; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                                <i class="fas fa-play"></i> PLAY
+                            <a href="https://www.roblox.com/games/${game.rootPlaceId || game.id}" target="_blank" style="display: block; background: var(--accent-primary); color: white; text-align: center; padding: 8px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 12px;">
+                                Play Game
                             </a>
                         </div>
                     </div>

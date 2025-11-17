@@ -1006,6 +1006,30 @@ def get_user_games():
             for game in games:
                 game['thumbnail'] = thumbnails.get(str(game['id']), '')
 
+            # Fetch votes for all games (batch request)
+            try:
+                votes_url = f"https://games.roblox.com/v1/games/votes?universeIds={','.join(universe_ids)}"
+                votes_response = requests.get(votes_url, timeout=30)
+                if votes_response.status_code == 200:
+                    votes_data = votes_response.json().get('data', [])
+                    votes_map = {str(v['id']): v for v in votes_data}
+                    for game in games:
+                        vote_info = votes_map.get(str(game['id']), {})
+                        game['upvotes'] = vote_info.get('upVotes', 0)
+                        game['downvotes'] = vote_info.get('downVotes', 0)
+            except Exception as e:
+                print(f"Error fetching votes: {e}")
+
+            # Fetch favorites for each game
+            for game in games:
+                try:
+                    fav_url = f"https://games.roblox.com/v1/games/{game['id']}/favorites/count"
+                    fav_response = requests.get(fav_url, timeout=10)
+                    if fav_response.status_code == 200:
+                        game['favorites'] = fav_response.json().get('favoritesCount', 0)
+                except Exception as e:
+                    print(f"Error fetching favorites for {game['id']}: {e}")
+
         return jsonify({'games': games, 'count': len(games)})
     except Exception as e:
         import traceback

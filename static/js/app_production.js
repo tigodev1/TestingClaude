@@ -329,6 +329,129 @@ async function testConnection() {
     }
 }
 
+// ===== COOKIE MANAGEMENT =====
+async function loadCookieStatus() {
+    try {
+        const response = await fetch('/api/proxy/cookie');
+        const data = await response.json();
+        const statusEl = document.getElementById('cookieStatus');
+
+        if (data.has_cookie) {
+            statusEl.innerHTML = `<span style="color: var(--success);"><i class="fas fa-check-circle"></i> Cookie Set (${data.cookie_length} chars)</span>`;
+        } else {
+            statusEl.innerHTML = `<span style="color: var(--text-secondary);"><i class="fas fa-times-circle"></i> No cookie set</span>`;
+        }
+    } catch (error) {
+        console.log('Failed to load cookie status:', error);
+    }
+}
+
+async function saveCookie() {
+    const cookieInput = document.getElementById('robloxCookieInput');
+    const cookie = cookieInput.value.trim();
+
+    if (!cookie) {
+        showToast('Please enter a cookie value', 'error');
+        return;
+    }
+
+    showToast('Saving cookie...', 'info');
+
+    try {
+        const response = await fetch('/api/proxy/cookie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cookie: cookie })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('Cookie saved successfully!', 'success');
+            cookieInput.value = ''; // Clear the input for security
+            loadCookieStatus();
+
+            const resultEl = document.getElementById('cookieTestResult');
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = `
+                <div style="background: var(--success); color: white; padding: 12px; border-radius: 8px;">
+                    <i class="fas fa-check-circle"></i> Cookie saved! Preview: ${data.cookie_preview}
+                </div>
+            `;
+        } else {
+            showToast(`Failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function testCookie() {
+    showToast('Testing cookie...', 'info');
+
+    const resultEl = document.getElementById('cookieTestResult');
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Testing cookie authentication...</div>';
+
+    try {
+        const response = await fetch('/api/proxy/cookie/test');
+        const data = await response.json();
+
+        if (data.valid) {
+            showToast('Cookie is valid!', 'success');
+            resultEl.innerHTML = `
+                <div style="background: var(--success); color: white; padding: 16px; border-radius: 8px;">
+                    <h4 style="margin: 0 0 12px 0;"><i class="fas fa-check-circle"></i> Cookie Valid!</h4>
+                    <p style="margin: 4px 0;"><strong>User ID:</strong> ${data.user_id}</p>
+                    <p style="margin: 4px 0;"><strong>Username:</strong> ${data.username}</p>
+                    <p style="margin: 4px 0;"><strong>Display Name:</strong> ${data.display_name}</p>
+                </div>
+            `;
+        } else {
+            showToast('Cookie is invalid', 'error');
+            resultEl.innerHTML = `
+                <div style="background: var(--danger); color: white; padding: 16px; border-radius: 8px;">
+                    <h4 style="margin: 0 0 12px 0;"><i class="fas fa-times-circle"></i> Cookie Invalid</h4>
+                    <p style="margin: 0;">${data.error}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+        resultEl.innerHTML = `
+            <div style="background: var(--danger); color: white; padding: 16px; border-radius: 8px;">
+                <i class="fas fa-exclamation-triangle"></i> Error testing cookie: ${error.message}
+            </div>
+        `;
+    }
+}
+
+async function removeCookie() {
+    if (!confirm('Are you sure you want to remove the cookie?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/proxy/cookie', { method: 'DELETE' });
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('Cookie removed', 'success');
+            loadCookieStatus();
+
+            const resultEl = document.getElementById('cookieTestResult');
+            resultEl.style.display = 'none';
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// Load cookie status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCookieStatus();
+});
+
 // ===== DASHBOARD =====
 function loadLocalStats() {
     // Load stats from local database only (no Roblox API calls)

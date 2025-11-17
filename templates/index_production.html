@@ -769,7 +769,7 @@
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div>
-                                <label class="form-label" style="margin-bottom: 8px;">Quick Tests (45+ endpoints)</label>
+                                <label class="form-label" style="margin-bottom: 8px;">Quick Tests (55+ endpoints)</label>
                                 <div style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 200px; overflow-y: auto; padding: 4px;">
                                     <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1')" title="Get Roblox user profile">User Info</button>
                                     <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/games')" title="User's created games">User Games</button>
@@ -806,6 +806,20 @@
                                     <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/thumbnails/assets?assetIds=1818,1028606')" title="Batch asset icons">Asset Thumbs</button>
                                     <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/localization/supported-languages')" title="Supported languages">Languages</button>
                                     <button class="btn btn-sm btn-secondary" onclick="setApiTest('POST', '/proxy/users/username', '{&quot;usernames&quot;: [&quot;Builderman&quot;, &quot;Roblox&quot;]}')">Username Lookup</button>
+                                    <div style="width: 100%; border-top: 1px solid var(--border); margin: 8px 0; padding-top: 8px;">
+                                        <small style="color: var(--accent-primary); font-weight: 600;"><i class="fas fa-lock"></i> Auth Required (need cookie)</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/me')" title="Your authenticated user info">My Account</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/robux')" title="Your Robux balance">My Robux</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/friends/count')" title="Your friend count">My Friends Count</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/friends/requests')" title="Pending friend requests">Friend Requests</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/messages/count')" title="Unread messages">Messages</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/notifications/count')" title="Notification count">Notifications</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/trades/count')" title="Pending trades">Trades</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/recommendations/users')" title="Friend recommendations">Recommendations</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/settings/email')" title="Email status">Email Status</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/privacy')" title="Privacy settings">Privacy</button>
+                                    <button class="btn btn-sm btn-warning" onclick="setApiTest('GET', '/proxy/auth/inventory/canview/1')" title="Check inventory access">Can View Inv</button>
                                 </div>
                             </div>
                             <div>
@@ -1130,6 +1144,38 @@
                             <i class="fas fa-plug"></i> Test Connection
                         </button>
                     </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-cookie"></i> Roblox Cookie (Authentication)</h3>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            .ROBLOSECURITY Cookie
+                            <span id="cookieStatus" style="margin-left: 10px; font-size: 12px;"></span>
+                        </label>
+                        <input type="password" class="form-input" id="robloxCookieInput" placeholder="Paste your .ROBLOSECURITY cookie here">
+                        <small style="color: var(--text-secondary);">
+                            <strong style="color: #f59e0b;">⚠️ WARNING:</strong> Your cookie gives full access to your account. Only use on your own server.
+                            <br>To get your cookie: Open Roblox → F12 → Application → Cookies → .ROBLOSECURITY
+                        </small>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="saveCookie()">
+                            <i class="fas fa-save"></i> Save Cookie
+                        </button>
+                        <button class="btn btn-secondary" onclick="testCookie()">
+                            <i class="fas fa-check-circle"></i> Test Cookie
+                        </button>
+                        <button class="btn btn-danger" onclick="removeCookie()">
+                            <i class="fas fa-trash"></i> Remove Cookie
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadCookieStatus()">
+                            <i class="fas fa-sync"></i> Refresh Status
+                        </button>
+                    </div>
+                    <div id="cookieTestResult" style="margin-top: 16px; display: none;"></div>
                 </div>
 
                 <div class="card">

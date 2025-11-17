@@ -1166,7 +1166,10 @@ proxy_cache = {}
 PROXY_CACHE_TTL = 60  # seconds
 proxy_rate_limits = {}
 PROXY_RATE_LIMIT_WINDOW = 60
-PROXY_RATE_LIMIT_MAX = 100
+PROXY_RATE_LIMIT_MAX = 999999  # Effectively unlimited
+
+# Roblox cookie for authenticated requests (set via /api/proxy/cookie)
+roblox_cookie = None
 
 PROXY_DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'proxy.db')
 
@@ -1245,17 +1248,24 @@ def get_proxy_cache_key(url, params=None):
 def proxy_roblox_request(roblox_url, method='GET', params=None, json_data=None):
     """Make proxied request to Roblox"""
     import requests as req
+    global roblox_cookie
     start_time = time.time()
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
     }
+
+    # Add cookie if available for authenticated requests
+    cookies = {}
+    if roblox_cookie:
+        cookies['.ROBLOSECURITY'] = roblox_cookie
+
     try:
         if method == 'GET':
-            response = req.get(roblox_url, params=params, headers=headers, timeout=15)
+            response = req.get(roblox_url, params=params, headers=headers, cookies=cookies, timeout=15)
         else:
-            response = req.post(roblox_url, params=params, json=json_data, headers=headers, timeout=15)
+            response = req.post(roblox_url, params=params, json=json_data, headers=headers, cookies=cookies, timeout=15)
         response_time = int((time.time() - start_time) * 1000)
 
         # Check if response is JSON
@@ -1302,6 +1312,81 @@ def make_proxy_request(roblox_url, endpoint_name, method='GET', params=None, jso
 
 # Initialize proxy DB
 init_proxy_db()
+
+
+@app.route('/api/proxy/cookie', methods=['GET', 'POST', 'DELETE'])
+def manage_proxy_cookie():
+    """Manage Roblox cookie for authenticated requests"""
+    global roblox_cookie
+
+    if request.method == 'GET':
+        # Return whether cookie is set (not the actual value for security)
+        return jsonify({
+            'has_cookie': roblox_cookie is not None,
+            'cookie_length': len(roblox_cookie) if roblox_cookie else 0,
+            'cookie_preview': (roblox_cookie[:20] + '...' + roblox_cookie[-10:]) if roblox_cookie and len(roblox_cookie) > 30 else None
+        })
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if not data or 'cookie' not in data:
+            return jsonify({'error': 'Cookie value required'}), 400
+
+        cookie_value = data['cookie'].strip()
+
+        # Clean the cookie (remove _|WARNING: prefix if present)
+        if cookie_value.startswith('_|WARNING:'):
+            # Find the actual cookie value after the warning
+            parts = cookie_value.split('_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_')
+            if len(parts) > 1:
+                cookie_value = parts[1]
+
+        if len(cookie_value) < 100:
+            return jsonify({'error': 'Cookie value seems too short to be valid'}), 400
+
+        roblox_cookie = cookie_value
+        return jsonify({
+            'success': True,
+            'message': 'Cookie set successfully',
+            'cookie_length': len(roblox_cookie),
+            'cookie_preview': roblox_cookie[:20] + '...' + roblox_cookie[-10:]
+        })
+
+    elif request.method == 'DELETE':
+        roblox_cookie = None
+        return jsonify({'success': True, 'message': 'Cookie removed'})
+
+
+@app.route('/api/proxy/cookie/test')
+def test_proxy_cookie():
+    """Test if the cookie is valid by making an authenticated request"""
+    global roblox_cookie
+
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set'}), 400
+
+    # Test by fetching authenticated user info
+    import requests as req
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+    }
+    cookies = {'.ROBLOSECURITY': roblox_cookie}
+
+    try:
+        response = req.get('https://users.roblox.com/v1/users/authenticated', headers=headers, cookies=cookies, timeout=10)
+        if response.status_code == 200:
+            user_data = response.json()
+            return jsonify({
+                'valid': True,
+                'user_id': user_data.get('id'),
+                'username': user_data.get('name'),
+                'display_name': user_data.get('displayName')
+            })
+        else:
+            return jsonify({'valid': False, 'error': 'Cookie is invalid or expired', 'status': response.status_code})
+    except Exception as e:
+        return jsonify({'valid': False, 'error': str(e)})
 
 
 @app.route('/proxy/users/<user_id>')
@@ -1966,6 +2051,118 @@ def proxy_analytics_recent():
         return jsonify({'requests': requests_list})
     except Exception as e:
         return jsonify({'requests': []})
+
+
+# ===== AUTHENTICATED PROXY ENDPOINTS (require cookie) =====
+
+@app.route('/proxy/auth/me')
+def proxy_auth_me():
+    """Get authenticated user info (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://users.roblox.com/v1/users/authenticated"
+    return jsonify(make_proxy_request(roblox_url, 'auth/me')[0]), make_proxy_request(roblox_url, 'auth/me')[1]
+
+
+@app.route('/proxy/auth/friends/requests')
+def proxy_auth_friend_requests():
+    """Get friend requests (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://friends.roblox.com/v1/my/friends/requests"
+    return jsonify(make_proxy_request(roblox_url, 'auth/friend-requests')[0]), make_proxy_request(roblox_url, 'auth/friend-requests')[1]
+
+
+@app.route('/proxy/auth/friends/count')
+def proxy_auth_friends_count():
+    """Get friend count (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://friends.roblox.com/v1/my/friends/count"
+    return jsonify(make_proxy_request(roblox_url, 'auth/friends-count')[0]), make_proxy_request(roblox_url, 'auth/friends-count')[1]
+
+
+@app.route('/proxy/auth/recommendations/users')
+def proxy_auth_recommendations():
+    """Get friend recommendations (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://friends.roblox.com/v1/recommended-users"
+    return jsonify(make_proxy_request(roblox_url, 'auth/recommendations')[0]), make_proxy_request(roblox_url, 'auth/recommendations')[1]
+
+
+@app.route('/proxy/auth/robux')
+def proxy_auth_robux():
+    """Get user's Robux balance (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://economy.roblox.com/v1/user/currency"
+    return jsonify(make_proxy_request(roblox_url, 'auth/robux')[0]), make_proxy_request(roblox_url, 'auth/robux')[1]
+
+
+@app.route('/proxy/auth/notifications/count')
+def proxy_auth_notifications():
+    """Get notification count (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://notifications.roblox.com/v2/stream-notifications/unread-count"
+    return jsonify(make_proxy_request(roblox_url, 'auth/notifications')[0]), make_proxy_request(roblox_url, 'auth/notifications')[1]
+
+
+@app.route('/proxy/auth/messages/count')
+def proxy_auth_messages():
+    """Get unread message count (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://privatemessages.roblox.com/v1/messages/unread/count"
+    return jsonify(make_proxy_request(roblox_url, 'auth/messages')[0]), make_proxy_request(roblox_url, 'auth/messages')[1]
+
+
+@app.route('/proxy/auth/trades/count')
+def proxy_auth_trades():
+    """Get trade count (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://trades.roblox.com/v1/trades/inbound/count"
+    return jsonify(make_proxy_request(roblox_url, 'auth/trades')[0]), make_proxy_request(roblox_url, 'auth/trades')[1]
+
+
+@app.route('/proxy/auth/settings/email')
+def proxy_auth_email():
+    """Get email verification status (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://accountsettings.roblox.com/v1/email"
+    return jsonify(make_proxy_request(roblox_url, 'auth/email')[0]), make_proxy_request(roblox_url, 'auth/email')[1]
+
+
+@app.route('/proxy/auth/privacy')
+def proxy_auth_privacy():
+    """Get privacy settings (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = "https://accountsettings.roblox.com/v1/app-chat-privacy"
+    return jsonify(make_proxy_request(roblox_url, 'auth/privacy')[0]), make_proxy_request(roblox_url, 'auth/privacy')[1]
+
+
+@app.route('/proxy/auth/inventory/canview/<user_id>')
+def proxy_auth_inventory_check(user_id):
+    """Check if you can view user's inventory (requires cookie)"""
+    global roblox_cookie
+    if not roblox_cookie:
+        return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
+    roblox_url = f"https://inventory.roblox.com/v1/users/{user_id}/can-view-inventory"
+    return jsonify(make_proxy_request(roblox_url, 'auth/inventory-check')[0]), make_proxy_request(roblox_url, 'auth/inventory-check')[1]
 
 
 if __name__ == '__main__':

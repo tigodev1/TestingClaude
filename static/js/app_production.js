@@ -17,10 +17,27 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initTabs();
     loadLocalStats(); // Only load local stats, not API
+    checkExistingConfig(); // Check if already configured
 
     // Start disconnected
     updateConnectionStatus(false);
 });
+
+// Check if config already exists on server
+async function checkExistingConfig() {
+    try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+
+        if (data.is_configured && data.has_key) {
+            // Config exists, try to restore connection
+            showToast('Found existing configuration, testing...', 'info');
+            await testConnection();
+        }
+    } catch (error) {
+        console.log('No existing config or error checking:', error);
+    }
+}
 
 // ===== NAVIGATION =====
 function initNavigation() {
@@ -207,6 +224,13 @@ async function saveConfig() {
         return;
     }
 
+    if (!universeId.match(/^\d+$/)) {
+        showToast('Universe ID must be a number', 'error');
+        return;
+    }
+
+    showToast('Saving configuration...', 'info');
+
     try {
         const response = await fetch('/api/config', {
             method: 'POST',
@@ -214,12 +238,15 @@ async function saveConfig() {
             body: JSON.stringify({ api_key: apiKey, universe_id: universeId })
         });
 
-        if (response.ok) {
-            showToast('Configuration saved!', 'success');
-            // Auto-test connection
+        const data = await response.json();
+
+        if (response.ok && data.status === 'success') {
+            showToast('Configuration saved! Testing connection...', 'success');
+            // Wait a moment for server to process, then test
+            await new Promise(resolve => setTimeout(resolve, 300));
             await testConnection();
         } else {
-            showToast('Failed to save configuration', 'error');
+            showToast(`Failed: ${data.error || 'Unknown error'}`, 'error');
         }
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
@@ -234,11 +261,22 @@ async function testConnection() {
         const data = await response.json();
 
         if (data.status === 'success') {
-            showToast('Connected successfully!', 'success');
+            showToast('Connected to Roblox API!', 'success');
             updateConnectionStatus(true);
-            // Reset rate limit to 300 on successful connection (minus 1 for this test)
-            updateRateLimitDisplay(299);
-            decrementRateLimit(); // Account for the test request
+            updateRateLimitDisplay(299); // Account for test call
+            loadLocalStats(); // Refresh stats
+
+            // Show success banner
+            const welcomeBanner = document.getElementById('welcomeBanner');
+            if (welcomeBanner) {
+                welcomeBanner.innerHTML = `
+                    <h3><i class="fas fa-check-circle" style="color: var(--success);"></i> Connected!</h3>
+                    <p>Your API is configured and working. Start exploring your datastores!</p>
+                    <button class="btn btn-primary" onclick="showPage('datastores')">
+                        <i class="fas fa-database"></i> Browse DataStores
+                    </button>
+                `;
+            }
         } else {
             showToast(`Connection failed: ${data.message}`, 'error');
             updateConnectionStatus(false);
@@ -1093,4 +1131,233 @@ function exportModal() {
 function importModal() {
     showPage('bulk');
     document.getElementById('importDatastore').focus();
+}
+
+// ===== ORDERED DATASTORE OPERATIONS =====
+async function loadOrderedEntries() {
+    if (!isConnected) {
+        showToast('Please configure your API key first', 'warning');
+        return;
+    }
+
+    const datastoreName = document.getElementById('orderedDatastore').value.trim();
+    const scope = document.getElementById('orderedScope').value.trim() || 'global';
+    const ascending = document.getElementById('orderedAscending').checked;
+    const limit = parseInt(document.getElementById('orderedLimit').value) || 100;
+
+    if (!datastoreName) {
+        showToast('Please enter a datastore name', 'error');
+        return;
+    }
+
+    showToast('Loading ordered entries...', 'info');
+
+    try {
+        const params = new URLSearchParams({
+            datastore: datastoreName,
+            scope: scope,
+            ascending: ascending,
+            limit: limit
+        });
+
+        const response = await fetch(`/api/ordered/list?${params}`);
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        displayOrderedEntries(data.entries || []);
+        showToast(`Loaded ${data.count} ordered entries`, 'success');
+        decrementRateLimit();
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+function displayOrderedEntries(entries) {
+    const card = document.getElementById('orderedEntriesCard');
+    const countEl = document.getElementById('orderedEntryCount');
+    const tbody = document.getElementById('orderedEntriesList');
+
+    if (card) card.style.display = 'block';
+    if (countEl) countEl.textContent = entries.length;
+    if (!tbody) return;
+
+    if (entries.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="empty-state">
+                    <i class="fas fa-list-ol"></i>
+                    <p>No ordered entries found</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = entries.map((entry, index) => `
+        <tr>
+            <td><strong>#${index + 1}</strong></td>
+            <td><code>${escapeHtml(entry.id || entry.key)}</code></td>
+            <td><span class="badge badge-primary">${entry.value}</span></td>
+            <td>
+                <button class="btn btn-sm btn-warning" onclick="updateOrderedEntry('${escapeHtml(entry.id || entry.key)}', ${entry.value})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteOrderedEntry('${escapeHtml(entry.id || entry.key)}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function createOrderedEntry() {
+    const datastoreName = document.getElementById('orderedDatastore').value.trim();
+    const key = document.getElementById('newOrderedKey').value.trim();
+    const value = parseInt(document.getElementById('newOrderedValue').value);
+
+    if (!datastoreName || !key || isNaN(value)) {
+        showToast('Please enter datastore, key, and numeric value', 'error');
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({
+            datastore: datastoreName,
+            key: key,
+            scope: document.getElementById('orderedScope').value.trim() || 'global'
+        });
+
+        const response = await fetch(`/api/ordered/entry?${params}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: value })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast('Ordered entry created!', 'success');
+        document.getElementById('newOrderedKey').value = '';
+        document.getElementById('newOrderedValue').value = '';
+        loadOrderedEntries();
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function updateOrderedEntry(key, currentValue) {
+    const newValue = prompt(`Update value for "${key}":`, currentValue);
+    if (newValue === null) return;
+
+    const parsedValue = parseInt(newValue);
+    if (isNaN(parsedValue)) {
+        showToast('Value must be a number', 'error');
+        return;
+    }
+
+    try {
+        const datastoreName = document.getElementById('orderedDatastore').value.trim();
+        const params = new URLSearchParams({
+            datastore: datastoreName,
+            key: key,
+            scope: document.getElementById('orderedScope').value.trim() || 'global'
+        });
+
+        const response = await fetch(`/api/ordered/entry?${params}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: parsedValue })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast('Entry updated!', 'success');
+        loadOrderedEntries();
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function deleteOrderedEntry(key) {
+    if (!confirm(`Delete ordered entry "${key}"?`)) return;
+
+    try {
+        const datastoreName = document.getElementById('orderedDatastore').value.trim();
+        const params = new URLSearchParams({
+            datastore: datastoreName,
+            key: key,
+            scope: document.getElementById('orderedScope').value.trim() || 'global'
+        });
+
+        const response = await fetch(`/api/ordered/entry?${params}`, { method: 'DELETE' });
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast('Entry deleted!', 'success');
+        loadOrderedEntries();
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// ===== DELETE ALL KEYS =====
+async function deleteAllKeys() {
+    const datastoreName = document.getElementById('deleteAllDatastore').value.trim();
+
+    if (!datastoreName) {
+        showToast('Please enter a datastore name', 'error');
+        return;
+    }
+
+    const confirmText = prompt(
+        `⚠️ DANGER: This will delete ALL keys in "${datastoreName}"!\n\n` +
+        `Type the datastore name to confirm:`
+    );
+
+    if (confirmText !== datastoreName) {
+        showToast('Deletion cancelled - name did not match', 'info');
+        return;
+    }
+
+    showToast('Deleting all keys... This may take a while.', 'warning');
+
+    try {
+        const response = await fetch('/api/bulk/delete-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                datastore: datastoreName,
+                scope: 'global',
+                confirm: true
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast(data.message, 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
 }

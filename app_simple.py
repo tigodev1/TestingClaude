@@ -13,7 +13,7 @@ from flask_cors import CORS
 # Import our API client
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from src.roblox_api import RobloxDataStoreAPI
+from src.roblox_api import RobloxDataStoreAPI, OrderedDataStoreAPI
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-this')
@@ -21,6 +21,7 @@ CORS(app)
 
 # Global state
 api_client = None
+ordered_api_client = None
 config_data = {
     'api_key': '',
     'universe_id': ''
@@ -83,7 +84,7 @@ def index():
 
 @app.route('/api/config', methods=['GET', 'POST'])
 def handle_config():
-    global api_client, config_data
+    global api_client, ordered_api_client, config_data
 
     try:
         if request.method == 'POST':
@@ -105,15 +106,18 @@ def handle_config():
             config_data['api_key'] = api_key
             config_data['universe_id'] = universe_id
 
-            # Create API client
+            # Create API clients (both standard and ordered)
             api_client = RobloxDataStoreAPI(api_key, universe_id)
+            ordered_api_client = OrderedDataStoreAPI(api_key, universe_id)
 
+            log_operation('CONFIG_SAVED', success=True, details=f'Universe: {universe_id}')
             return jsonify({'status': 'success', 'message': 'Configuration saved'})
 
         # GET request
         return jsonify({
             'has_key': bool(config_data['api_key']),
-            'universe_id': config_data['universe_id']
+            'universe_id': config_data['universe_id'],
+            'is_configured': api_client is not None
         })
 
     except Exception as e:
@@ -494,6 +498,124 @@ def analytics_top_ds():
 @app.route('/api/analytics/errors')
 def analytics_errors():
     return jsonify({'total_errors': 0, 'error_patterns': {}, 'errors_by_operation': {}})
+
+
+# ===== ORDERED DATASTORE ENDPOINTS =====
+@app.route('/api/ordered/list')
+def list_ordered_entries():
+    if not ordered_api_client:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        datastore = request.args.get('datastore', '')
+        scope = request.args.get('scope', 'global')
+        ascending = request.args.get('ascending', 'false').lower() == 'true'
+        limit = int(request.args.get('limit', 100))
+
+        if not datastore:
+            return jsonify({'error': 'Datastore name required'}), 400
+
+        entries = ordered_api_client.list_entries(datastore, scope, ascending, limit)
+        log_operation('LIST_ORDERED', datastore, success=True, details=f'Found {len(entries)}')
+        return jsonify({'entries': entries, 'count': len(entries)})
+    except Exception as e:
+        log_operation('LIST_ORDERED', request.args.get('datastore', ''), success=False, details=str(e))
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ordered/entry', methods=['GET', 'POST', 'DELETE'])
+def handle_ordered_entry():
+    if not ordered_api_client:
+        return jsonify({'error': 'API not configured'}), 400
+
+    datastore = request.args.get('datastore', '')
+    key = request.args.get('key', '')
+    scope = request.args.get('scope', 'global')
+
+    if not datastore or not key:
+        return jsonify({'error': 'Datastore and key required'}), 400
+
+    try:
+        if request.method == 'GET':
+            value = ordered_api_client.get_entry(datastore, key, scope)
+            log_operation('GET_ORDERED', datastore, key, True)
+            return jsonify({'value': value})
+
+        elif request.method == 'POST':
+            data = request.get_json()
+            value = int(data.get('value', 0))
+            result = ordered_api_client.set_entry(datastore, key, value, scope)
+            log_operation('SET_ORDERED', datastore, key, True)
+            return jsonify(result)
+
+        elif request.method == 'DELETE':
+            ordered_api_client.delete_entry(datastore, key, scope)
+            log_operation('DELETE_ORDERED', datastore, key, True)
+            return jsonify({'status': 'success', 'message': f'Ordered entry {key} deleted'})
+
+    except Exception as e:
+        log_operation(request.method + '_ORDERED', datastore, key, False, str(e))
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ordered/increment', methods=['POST'])
+def increment_ordered():
+    if not ordered_api_client:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        datastore = request.args.get('datastore', '')
+        key = request.args.get('key', '')
+        scope = request.args.get('scope', 'global')
+
+        data = request.get_json()
+        increment_by = int(data.get('increment_by', 1))
+
+        result = ordered_api_client.increment_entry(datastore, key, increment_by, scope)
+        log_operation('INCREMENT_ORDERED', datastore, key, True)
+        return jsonify({'value': result})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ===== DELETE ALL KEYS =====
+@app.route('/api/bulk/delete-all', methods=['POST'])
+def delete_all_keys():
+    if not api_client:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        data = request.get_json()
+        datastore = data.get('datastore', '')
+        scope = data.get('scope', 'global')
+        confirm = data.get('confirm', False)
+
+        if not datastore:
+            return jsonify({'error': 'Datastore name required'}), 400
+
+        if not confirm:
+            return jsonify({'error': 'Please confirm deletion by setting confirm=true'}), 400
+
+        # First get all keys
+        all_keys = api_client.list_all_entries(datastore, scope, '')
+
+        if not all_keys:
+            return jsonify({'status': 'success', 'deleted': 0, 'message': 'No keys found'})
+
+        # Delete all keys
+        results = api_client.bulk_delete_entries(datastore, [k['key'] for k in all_keys], scope)
+        success_count = sum(1 for v in results.values() if v)
+
+        log_operation('DELETE_ALL', datastore, success=True, details=f'{success_count}/{len(all_keys)} deleted')
+        return jsonify({
+            'status': 'success',
+            'deleted': success_count,
+            'total': len(all_keys),
+            'message': f'Deleted {success_count} of {len(all_keys)} keys'
+        })
+    except Exception as e:
+        log_operation('DELETE_ALL', data.get('datastore', ''), success=False, details=str(e))
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

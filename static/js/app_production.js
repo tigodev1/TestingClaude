@@ -1847,3 +1847,120 @@ async function loadProxyStats() {
         showToast(`Error loading proxy stats: ${error.message}`, 'error');
     }
 }
+
+// ===== API TESTER =====
+// Show/hide body section based on method
+document.addEventListener('DOMContentLoaded', function() {
+    const methodSelect = document.getElementById('apiTestMethod');
+    if (methodSelect) {
+        methodSelect.addEventListener('change', function() {
+            const bodySection = document.getElementById('apiTestBodySection');
+            bodySection.style.display = this.value === 'POST' ? 'block' : 'none';
+        });
+    }
+});
+
+function setApiTest(method, url, body = '') {
+    document.getElementById('apiTestMethod').value = method;
+    document.getElementById('apiTestUrl').value = url;
+    document.getElementById('apiTestBodySection').style.display = method === 'POST' ? 'block' : 'none';
+    if (body) {
+        document.getElementById('apiTestBody').value = body;
+    }
+    testProxyApi();
+}
+
+function clearApiTest() {
+    document.getElementById('apiTestMethod').value = 'GET';
+    document.getElementById('apiTestUrl').value = '/proxy/users/1';
+    document.getElementById('apiTestBody').value = '';
+    document.getElementById('apiTestBodySection').style.display = 'none';
+    document.getElementById('apiTestStatus').textContent = '-';
+    document.getElementById('apiTestTime').textContent = '-';
+    document.getElementById('apiTestSize').textContent = '-';
+    document.getElementById('apiTestResponse').textContent = 'Click "Send" or use a quick test to see the response here...';
+}
+
+async function testProxyApi() {
+    const method = document.getElementById('apiTestMethod').value;
+    const url = document.getElementById('apiTestUrl').value;
+    const bodyText = document.getElementById('apiTestBody').value;
+    const btn = document.getElementById('apiTestBtn');
+    const responseBox = document.getElementById('apiTestResponse');
+    const statusSpan = document.getElementById('apiTestStatus');
+    const timeSpan = document.getElementById('apiTestTime');
+    const sizeSpan = document.getElementById('apiTestSize');
+
+    if (!url) {
+        showToast('Please enter a URL', 'error');
+        return;
+    }
+
+    btn.classList.add('loading');
+    responseBox.textContent = 'Loading...';
+    statusSpan.textContent = 'Sending...';
+    timeSpan.textContent = '-';
+    sizeSpan.textContent = '-';
+
+    const startTime = performance.now();
+
+    try {
+        const fetchOptions = {
+            method: method,
+            headers: {}
+        };
+
+        if (method === 'POST' && bodyText) {
+            fetchOptions.headers['Content-Type'] = 'application/json';
+            fetchOptions.body = bodyText;
+        }
+
+        const response = await fetch(url, fetchOptions);
+        const endTime = performance.now();
+        const responseTime = Math.round(endTime - startTime);
+
+        const data = await response.json();
+        const jsonString = JSON.stringify(data, null, 2);
+        const sizeBytes = new Blob([jsonString]).size;
+
+        // Update status with color
+        const statusClass = response.status < 400 ? 'var(--success)' : 'var(--danger)';
+        statusSpan.innerHTML = `<span style="color: ${statusClass}; font-weight: 600;">${response.status} ${response.statusText}</span>`;
+        timeSpan.textContent = `${responseTime}ms`;
+        sizeSpan.textContent = sizeBytes > 1024 ? `${(sizeBytes / 1024).toFixed(1)} KB` : `${sizeBytes} bytes`;
+
+        // Syntax highlight the JSON
+        responseBox.innerHTML = syntaxHighlightJson(jsonString);
+
+        showToast(`API request completed (${response.status})`, response.status < 400 ? 'success' : 'error');
+    } catch (error) {
+        statusSpan.innerHTML = `<span style="color: var(--danger); font-weight: 600;">Error</span>`;
+        timeSpan.textContent = `${Math.round(performance.now() - startTime)}ms`;
+        responseBox.textContent = `Error: ${error.message}`;
+        showToast(`API request failed: ${error.message}`, 'error');
+    } finally {
+        btn.classList.remove('loading');
+    }
+}
+
+function syntaxHighlightJson(json) {
+    // Escape HTML
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Add syntax highlighting
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'color: #ae81ff;'; // number
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'color: #f92672;'; // key
+            } else {
+                cls = 'color: #a6e22e;'; // string
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'color: #66d9ef;'; // boolean
+        } else if (/null/.test(match)) {
+            cls = 'color: #fd971f;'; // null
+        }
+        return '<span style="' + cls + '">' + match + '</span>';
+    });
+}

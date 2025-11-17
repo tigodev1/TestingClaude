@@ -718,6 +718,63 @@
 
                 <div class="card">
                     <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-flask"></i> API Tester</h3>
+                        <button class="btn btn-danger btn-sm" onclick="clearApiTest()">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                    <div style="padding: 16px;">
+                        <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 12px; margin-bottom: 16px;">
+                            <select id="apiTestMethod" class="form-input" style="width: auto;">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                            </select>
+                            <input type="text" id="apiTestUrl" class="form-input" placeholder="/proxy/users/1" value="/proxy/users/1">
+                            <button class="btn btn-primary" onclick="testProxyApi()" id="apiTestBtn">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+
+                        <div id="apiTestBodySection" style="display: none; margin-bottom: 16px;">
+                            <label class="form-label">Request Body (JSON)</label>
+                            <textarea id="apiTestBody" class="form-input" style="font-family: monospace; height: 100px;" placeholder='{"usernames": ["Builderman"]}'></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <label class="form-label" style="margin-bottom: 8px;">Quick Tests</label>
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1')">User Info</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/games')">User Games</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/badges')">User Badges</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/friends')">User Friends</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/presence')">Presence</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/groups/1/roles')">Group Roles</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/1/servers')">Game Servers</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/assets/1818')">Asset Info</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/catalog/search?keyword=dominus')">Search Catalog</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('POST', '/proxy/users/username', '{&quot;usernames&quot;: [&quot;Builderman&quot;]}')">Username Lookup</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label" style="margin-bottom: 8px;">Response Info</label>
+                                <div id="apiTestInfo" style="font-size: 12px; color: var(--text-secondary);">
+                                    <div>Status: <span id="apiTestStatus">-</span></div>
+                                    <div>Time: <span id="apiTestTime">-</span></div>
+                                    <div>Size: <span id="apiTestSize">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px;">
+                            <label class="form-label" style="margin-bottom: 8px;">Response</label>
+                            <pre id="apiTestResponse" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-size: 11px; max-height: 400px; overflow: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);">Click "Send" or use a quick test to see the response here...</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
                         <h3 class="card-title"><i class="fas fa-chart-line"></i> Top Endpoints</h3>
                     </div>
                     <div id="proxyTopEndpoints" style="padding: 16px;">

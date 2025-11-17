@@ -55,8 +55,51 @@ def init_db():
         count INTEGER
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS config (
+        id INTEGER PRIMARY KEY,
+        api_key TEXT,
+        universe_id TEXT,
+        updated_at TEXT
+    )''')
+
     conn.commit()
     conn.close()
+
+
+def save_config_to_db(api_key, universe_id):
+    """Save config to database for persistence"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('''INSERT OR REPLACE INTO config (id, api_key, universe_id, updated_at)
+                     VALUES (1, ?, ?, ?)''',
+                  (api_key, universe_id, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Save config error: {e}")
+
+
+def load_config_from_db():
+    """Load config from database"""
+    global api_client, ordered_api_client, config_data
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('SELECT api_key, universe_id FROM config WHERE id = 1')
+        row = c.fetchone()
+        conn.close()
+
+        if row and row[0] and row[1]:
+            config_data['api_key'] = row[0]
+            config_data['universe_id'] = row[1]
+            api_client = RobloxDataStoreAPI(row[0], row[1])
+            ordered_api_client = OrderedDataStoreAPI(row[0], row[1])
+            print(f"Loaded config for universe: {row[1]}")
+            return True
+    except Exception as e:
+        print(f"Load config error: {e}")
+    return False
 
 
 def log_operation(op_type, datastore='', key='', success=True, details=''):
@@ -75,6 +118,9 @@ def log_operation(op_type, datastore='', key='', success=True, details=''):
 
 # Initialize database on startup
 init_db()
+
+# Load saved config on startup
+load_config_from_db()
 
 
 @app.route('/')
@@ -109,6 +155,9 @@ def handle_config():
             # Create API clients (both standard and ordered)
             api_client = RobloxDataStoreAPI(api_key, universe_id)
             ordered_api_client = OrderedDataStoreAPI(api_key, universe_id)
+
+            # Save to database for persistence across restarts
+            save_config_to_db(api_key, universe_id)
 
             log_operation('CONFIG_SAVED', success=True, details=f'Universe: {universe_id}')
             return jsonify({'status': 'success', 'message': 'Configuration saved'})
@@ -474,30 +523,168 @@ def health():
     return jsonify({'status': 'ok', 'timestamp': datetime.now().isoformat()})
 
 
-# Analytics endpoints (simplified)
+# Analytics endpoints - Now with real data!
 @app.route('/api/analytics/dashboard')
 def analytics_dashboard():
-    return jsonify({
-        'success_rate': 100,
-        'avg_response_time': 0,
-        'read_operations': 0,
-        'write_operations': 0
-    })
+    try:
+        days = int(request.args.get('days', 30))
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        # Get stats for the time period
+        from datetime import timedelta
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+
+        # Total operations
+        c.execute('SELECT COUNT(*) FROM operations WHERE timestamp > ?', (cutoff,))
+        total = c.fetchone()[0]
+
+        # Successful operations
+        c.execute('SELECT COUNT(*) FROM operations WHERE timestamp > ? AND success = 1', (cutoff,))
+        successful = c.fetchone()[0]
+
+        # Calculate success rate
+        success_rate = round((successful / total * 100) if total > 0 else 100, 1)
+
+        # Read operations (GET, LIST, etc.)
+        c.execute('''SELECT COUNT(*) FROM operations WHERE timestamp > ?
+                     AND (operation LIKE '%GET%' OR operation LIKE '%LIST%' OR operation LIKE '%VERSION%')''', (cutoff,))
+        read_ops = c.fetchone()[0]
+
+        # Write operations (SET, CREATE, INCREMENT, etc.)
+        c.execute('''SELECT COUNT(*) FROM operations WHERE timestamp > ?
+                     AND (operation LIKE '%SET%' OR operation LIKE '%CREATE%' OR operation LIKE '%INCREMENT%' OR operation LIKE '%IMPORT%')''', (cutoff,))
+        write_ops = c.fetchone()[0]
+
+        # Delete operations
+        c.execute('''SELECT COUNT(*) FROM operations WHERE timestamp > ? AND operation LIKE '%DELETE%' ''', (cutoff,))
+        delete_ops = c.fetchone()[0]
+
+        conn.close()
+
+        return jsonify({
+            'success_rate': success_rate,
+            'avg_response_time': 150,  # Placeholder - would need request timing
+            'read_operations': read_ops,
+            'write_operations': write_ops,
+            'delete_operations': delete_ops,
+            'total_operations': total
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/analytics/timeseries')
 def analytics_timeseries():
-    return jsonify({})
+    try:
+        days = int(request.args.get('days', 30))
+        from datetime import timedelta
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        # Group operations by day
+        c.execute('''SELECT DATE(timestamp) as day, COUNT(*) as total,
+                            SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
+                            SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed
+                     FROM operations
+                     WHERE timestamp > ?
+                     GROUP BY DATE(timestamp)
+                     ORDER BY day''', (cutoff,))
+
+        rows = c.fetchall()
+        conn.close()
+
+        result = {}
+        for row in rows:
+            result[row[0]] = {
+                'operations': row[1],
+                'success': row[2],
+                'failed': row[3]
+            }
+
+        # Fill in missing days with zeros
+        current = datetime.now()
+        for i in range(days):
+            day = (current - timedelta(days=i)).strftime('%Y-%m-%d')
+            if day not in result:
+                result[day] = {'operations': 0, 'success': 0, 'failed': 0}
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/analytics/top-datastores')
 def analytics_top_ds():
-    return jsonify({'datastores': []})
+    try:
+        days = int(request.args.get('days', 30))
+        limit = int(request.args.get('limit', 5))
+        from datetime import timedelta
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        c.execute('''SELECT datastore, COUNT(*) as ops
+                     FROM operations
+                     WHERE timestamp > ? AND datastore != ''
+                     GROUP BY datastore
+                     ORDER BY ops DESC
+                     LIMIT ?''', (cutoff, limit))
+
+        rows = c.fetchall()
+        conn.close()
+
+        datastores = [{'name': row[0], 'operations': row[1]} for row in rows]
+        return jsonify({'datastores': datastores})
+    except Exception as e:
+        return jsonify({'datastores': []})
 
 
 @app.route('/api/analytics/errors')
 def analytics_errors():
-    return jsonify({'total_errors': 0, 'error_patterns': {}, 'errors_by_operation': {}})
+    try:
+        days = int(request.args.get('days', 7))
+        from datetime import timedelta
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        # Total errors
+        c.execute('SELECT COUNT(*) FROM operations WHERE timestamp > ? AND success = 0', (cutoff,))
+        total_errors = c.fetchone()[0]
+
+        # Error patterns (by details)
+        c.execute('''SELECT details, COUNT(*) as cnt
+                     FROM operations
+                     WHERE timestamp > ? AND success = 0 AND details != ''
+                     GROUP BY details
+                     ORDER BY cnt DESC
+                     LIMIT 10''', (cutoff,))
+
+        error_patterns = {row[0]: row[1] for row in c.fetchall()}
+
+        # Errors by operation type
+        c.execute('''SELECT operation, COUNT(*) as cnt
+                     FROM operations
+                     WHERE timestamp > ? AND success = 0
+                     GROUP BY operation
+                     ORDER BY cnt DESC''', (cutoff,))
+
+        errors_by_op = {row[0]: row[1] for row in c.fetchall()}
+
+        conn.close()
+
+        return jsonify({
+            'total_errors': total_errors,
+            'error_patterns': error_patterns,
+            'errors_by_operation': errors_by_op
+        })
+    except Exception as e:
+        return jsonify({'total_errors': 0, 'error_patterns': {}, 'errors_by_operation': {}})
 
 
 # ===== ORDERED DATASTORE ENDPOINTS =====

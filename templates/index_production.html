@@ -644,7 +644,9 @@
                             <option value="30" selected>Last 30 Days</option>
                         </select>
                     </div>
-                    <canvas id="operationsChart" height="100"></canvas>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="operationsChart"></canvas>
+                    </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
@@ -652,14 +654,18 @@
                         <div class="card-header">
                             <h3 class="card-title">Operation Types</h3>
                         </div>
-                        <canvas id="operationTypesChart" height="200"></canvas>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="operationTypesChart"></canvas>
+                        </div>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Top DataStores</h3>
                         </div>
-                        <canvas id="topDatastoresChart" height="200"></canvas>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="topDatastoresChart"></canvas>
+                        </div>
                     </div>
                 </div>
 

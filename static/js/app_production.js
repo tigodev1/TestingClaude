@@ -30,8 +30,20 @@ async function checkExistingConfig() {
         const data = await response.json();
 
         if (data.is_configured && data.has_key) {
+            // Populate the universe ID field (not API key for security)
+            const universeInput = document.getElementById('universeIdInput');
+            if (universeInput && data.universe_id) {
+                universeInput.value = data.universe_id;
+            }
+
+            // Show that we have a saved key
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            if (apiKeyInput && data.has_key) {
+                apiKeyInput.placeholder = '••••••••••••••••••••• (saved - enter new key to change)';
+            }
+
             // Config exists, try to restore connection
-            showToast('Found existing configuration, testing...', 'info');
+            showToast('Found saved configuration, reconnecting...', 'info');
             await testConnection();
         }
     } catch (error) {
@@ -219,13 +231,25 @@ async function saveConfig() {
     const apiKey = document.getElementById('apiKeyInput').value.trim();
     const universeId = document.getElementById('universeIdInput').value.trim();
 
-    if (!apiKey || !universeId) {
-        showToast('Please enter both API Key and Universe ID', 'error');
+    // Check if we have at least universe ID
+    if (!universeId) {
+        showToast('Please enter Universe ID', 'error');
         return;
     }
 
     if (!universeId.match(/^\d+$/)) {
         showToast('Universe ID must be a number', 'error');
+        return;
+    }
+
+    // If no API key entered but we're already connected, just update universe ID
+    if (!apiKey && isConnected) {
+        showToast('Enter a new API key to change credentials', 'warning');
+        return;
+    }
+
+    if (!apiKey) {
+        showToast('Please enter API Key', 'error');
         return;
     }
 
@@ -242,6 +266,9 @@ async function saveConfig() {
 
         if (response.ok && data.status === 'success') {
             showToast('Configuration saved! Testing connection...', 'success');
+            // Clear the API key field for security
+            document.getElementById('apiKeyInput').value = '';
+            document.getElementById('apiKeyInput').placeholder = '••••••••••••••••••••• (saved - enter new key to change)';
             // Wait a moment for server to process, then test
             await new Promise(resolve => setTimeout(resolve, 300));
             await testConnection();
@@ -1164,7 +1191,12 @@ async function loadOrderedEntries() {
         const data = await response.json();
 
         if (data.error) {
-            showToast(`Error: ${data.error}`, 'error');
+            // Better error messages for common issues
+            if (data.error.includes('NOT_FOUND') || data.error.includes('not found')) {
+                showToast(`Ordered DataStore "${datastoreName}" not found. Create it first by adding an entry below, or check the name.`, 'warning');
+            } else {
+                showToast(`Error: ${data.error}`, 'error');
+            }
             return;
         }
 

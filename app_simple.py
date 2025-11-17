@@ -1644,14 +1644,6 @@ def proxy_user_followings(user_id):
     return jsonify(data), status
 
 
-@app.route('/proxy/users/<user_id>/friend-requests')
-def proxy_user_friend_requests(user_id):
-    """Get pending friend requests count"""
-    url = f"https://friends.roblox.com/v1/user/friend-requests/count"
-    data, status = make_proxy_request(url, f'/proxy/users/{user_id}/friend-requests')
-    return jsonify(data), status
-
-
 @app.route('/proxy/economy/resale-tax')
 def proxy_economy_resale_tax():
     """Get current resale tax rate"""
@@ -1733,17 +1725,6 @@ def proxy_game_favorites_count(universe_id):
     return jsonify(data), status
 
 
-@app.route('/proxy/develop/games/<universe_id>/revenue')
-def proxy_game_revenue(universe_id):
-    """Get game revenue statistics"""
-    time_frame = request.args.get('timeFrame', 'Month')
-    url = f"https://develop.roblox.com/v1/universes/{universe_id}/revenue/summary?timeFrame={time_frame}"
-    data, status = make_proxy_request(url, f'/proxy/develop/games/{universe_id}/revenue')
-    if status == 200:
-        proxy_cache[f"revenue_{universe_id}_{time_frame}"] = {'data': data, 'time': time.time()}
-    return jsonify(data), status
-
-
 @app.route('/proxy/thumbnails/users')
 def proxy_thumbnails_users():
     """Get batch user avatars"""
@@ -1818,23 +1799,6 @@ def proxy_group_social_links(group_id):
     return jsonify(data), status
 
 
-@app.route('/proxy/groups/<group_id>/audit-log')
-def proxy_group_audit_log(group_id):
-    """Get group audit log"""
-    action_type = request.args.get('actionType', '')
-    limit = request.args.get('limit', 10)
-    cursor = request.args.get('cursor', '')
-    url = f"https://groups.roblox.com/v1/groups/{group_id}/audit-log?limit={limit}"
-    if action_type:
-        url += f"&actionType={action_type}"
-    if cursor:
-        url += f"&cursor={cursor}"
-    data, status = make_proxy_request(url, f'/proxy/groups/{group_id}/audit-log')
-    if status == 200:
-        proxy_cache[f"audit_{group_id}_{cursor}"] = {'data': data, 'time': time.time()}
-    return jsonify(data), status
-
-
 @app.route('/proxy/localization/supported-languages')
 def proxy_supported_languages():
     """Get Roblox supported languages"""
@@ -1856,14 +1820,6 @@ def proxy_username_history(user_id):
     data, status = make_proxy_request(url, f'/proxy/users/{user_id}/username-history')
     if status == 200:
         proxy_cache[f"username_history_{user_id}"] = {'data': data, 'time': time.time()}
-    return jsonify(data), status
-
-
-@app.route('/proxy/birthday')
-def proxy_user_birthday():
-    """Get user's birth date (current authenticated user)"""
-    url = "https://accountinformation.roblox.com/v1/birthdate"
-    data, status = make_proxy_request(url, '/proxy/birthday')
     return jsonify(data), status
 
 

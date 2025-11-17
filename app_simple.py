@@ -6,6 +6,7 @@ Bulletproof version with minimal dependencies
 import os
 import json
 import sqlite3
+import requests
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
@@ -2668,20 +2669,20 @@ POLLINATIONS_REFERER = 'https://tigoshub.com/'
 def ai_generate_image():
     """Generate an image using Pollinations AI"""
     prompt = request.args.get('prompt', '')
-    model = request.args.get('model', 'flux')
+    model = request.args.get('model', 'flux-realism')  # Default to realism model
     width = request.args.get('width', '1024')
     height = request.args.get('height', '1024')
-    seed = request.args.get('seed', '')
-    enhance = request.args.get('enhance', 'true')
+
+    # Hardcoded seed for realistic, consistent results
+    seed = request.args.get('seed', '42069')  # Use consistent seed if not provided
 
     if not prompt:
         return jsonify({'error': 'Prompt is required'}), 400
 
     try:
-        # Build the Pollinations AI image URL
-        url_params = f"model={model}&width={width}&height={height}&enhance={enhance}"
-        if seed:
-            url_params += f"&seed={seed}"
+        # Build the Pollinations AI image URL with no filters
+        # enhance=false to keep original prompt, nologo=true to remove watermark
+        url_params = f"model={model}&width={width}&height={height}&seed={seed}&enhance=false&nologo=true&nofeed=true&private=true"
 
         # URL encode the prompt
         from urllib.parse import quote
@@ -2696,7 +2697,8 @@ def ai_generate_image():
             'prompt': prompt,
             'model': model,
             'width': width,
-            'height': height
+            'height': height,
+            'seed': seed
         })
 
     except Exception as e:
@@ -2838,6 +2840,192 @@ def ai_text_to_speech():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ============= AI HISTORY ENDPOINTS =============
+
+@app.route('/api/ai/save-chat', methods=['POST'])
+def save_chat():
+    """Save chat history"""
+    data = request.json
+    chat_name = data.get('name', f"Chat {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    messages = data.get('messages', [])
+    model = data.get('model', 'openai')
+
+    conn = sqlite3.connect('data/datastore.db')
+    c = conn.cursor()
+
+    # Create table if not exists
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS ai_chat_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            model TEXT,
+            messages TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    c.execute('INSERT INTO ai_chat_history (name, model, messages) VALUES (?, ?, ?)',
+              (chat_name, model, json.dumps(messages)))
+
+    conn.commit()
+    chat_id = c.lastrowid
+    conn.close()
+
+    return jsonify({'success': True, 'id': chat_id, 'name': chat_name})
+
+
+@app.route('/api/ai/get-chats')
+def get_chats():
+    """Get all saved chats"""
+    conn = sqlite3.connect('data/datastore.db')
+    c = conn.cursor()
+
+    # Create table if not exists
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS ai_chat_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            model TEXT,
+            messages TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    c.execute('SELECT id, name, model, created_at FROM ai_chat_history ORDER BY created_at DESC LIMIT 50')
+    chats = []
+    for row in c.fetchall():
+        chats.append({
+            'id': row[0],
+            'name': row[1],
+            'model': row[2],
+            'created_at': row[3]
+        })
+
+    conn.close()
+    return jsonify({'chats': chats})
+
+
+@app.route('/api/ai/load-chat/<int:chat_id>')
+def load_chat(chat_id):
+    """Load a saved chat"""
+    conn = sqlite3.connect('data/datastore.db')
+    c = conn.cursor()
+
+    c.execute('SELECT name, model, messages FROM ai_chat_history WHERE id = ?', (chat_id,))
+    row = c.fetchone()
+    conn.close()
+
+    if row:
+        return jsonify({
+            'success': True,
+            'name': row[0],
+            'model': row[1],
+            'messages': json.loads(row[2])
+        })
+    else:
+        return jsonify({'error': 'Chat not found'}), 404
+
+
+@app.route('/api/ai/delete-chat/<int:chat_id>', methods=['DELETE'])
+def delete_chat(chat_id):
+    """Delete a saved chat"""
+    conn = sqlite3.connect('data/datastore.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM ai_chat_history WHERE id = ?', (chat_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
+
+@app.route('/api/ai/save-image', methods=['POST'])
+def save_image():
+    """Save generated image to history"""
+    data = request.json
+    prompt = data.get('prompt', '')
+    url = data.get('url', '')
+    model = data.get('model', 'flux-realism')
+    width = data.get('width', 1024)
+    height = data.get('height', 1024)
+    seed = data.get('seed', '42069')
+
+    conn = sqlite3.connect('data/datastore.db')
+    c = conn.cursor()
+
+    # Create table if not exists
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS ai_image_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            prompt TEXT,
+            url TEXT,
+            model TEXT,
+            width INTEGER,
+            height INTEGER,
+            seed TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    c.execute('INSERT INTO ai_image_history (prompt, url, model, width, height, seed) VALUES (?, ?, ?, ?, ?, ?)',
+              (prompt, url, model, width, height, seed))
+
+    conn.commit()
+    image_id = c.lastrowid
+    conn.close()
+
+    return jsonify({'success': True, 'id': image_id})
+
+
+@app.route('/api/ai/get-images')
+def get_images():
+    """Get all generated images"""
+    conn = sqlite3.connect('data/datastore.db')
+    c = conn.cursor()
+
+    # Create table if not exists
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS ai_image_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            prompt TEXT,
+            url TEXT,
+            model TEXT,
+            width INTEGER,
+            height INTEGER,
+            seed TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    c.execute('SELECT id, prompt, url, model, width, height, seed, created_at FROM ai_image_history ORDER BY created_at DESC LIMIT 100')
+    images = []
+    for row in c.fetchall():
+        images.append({
+            'id': row[0],
+            'prompt': row[1],
+            'url': row[2],
+            'model': row[3],
+            'width': row[4],
+            'height': row[5],
+            'seed': row[6],
+            'created_at': row[7]
+        })
+
+    conn.close()
+    return jsonify({'images': images})
+
+
+@app.route('/api/ai/delete-image/<int:image_id>', methods=['DELETE'])
+def delete_image(image_id):
+    """Delete an image from history"""
+    conn = sqlite3.connect('data/datastore.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM ai_image_history WHERE id = ?', (image_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
 
 
 if __name__ == '__main__':

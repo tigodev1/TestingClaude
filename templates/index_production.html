@@ -943,6 +943,31 @@
                         <p>This user isn't in any groups</p>
                     </div>
                 </div>
+
+                <div id="userBadgesCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-medal"></i> Badges (<span id="userBadgesCount">0</span>)</h3>
+                    </div>
+                    <div id="userBadgesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; padding: 16px;"></div>
+                    <div id="userNoBadges" style="display: none; text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-medal" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>No badges earned yet</p>
+                    </div>
+                </div>
+
+                <div id="userFriendsCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-user-friends"></i> Friends (<span id="userFriendsCount">0</span>)</h3>
+                    </div>
+                    <div id="userFriendsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; padding: 16px;"></div>
+                </div>
+
+                <div id="userHistoryCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-history"></i> Username History</h3>
+                    </div>
+                    <div id="userHistoryList" style="padding: 16px;"></div>
+                </div>
             </div>
 
             <!-- Backups Page -->

@@ -1497,6 +1497,9 @@ async function lookupUser() {
     document.getElementById('userGamesCard').style.display = 'none';
     document.getElementById('userGroupGamesCard').style.display = 'none';
     document.getElementById('userGroupsCard').style.display = 'none';
+    document.getElementById('userBadgesCard').style.display = 'none';
+    document.getElementById('userFriendsCard').style.display = 'none';
+    document.getElementById('userHistoryCard').style.display = 'none';
 
     try {
         let userId = userInput;
@@ -1754,6 +1757,97 @@ async function lookupUser() {
             groupsCount.textContent = '0';
             groupsGrid.style.display = 'none';
             noGroups.style.display = 'block';
+        }
+
+        // Load badges
+        showToast('Loading badges...', 'info');
+        try {
+            const badgesResponse = await fetch(`/proxy/users/${userId}/badges`);
+            const badgesData = await badgesResponse.json();
+
+            const badgesCard = document.getElementById('userBadgesCard');
+            const badgesGrid = document.getElementById('userBadgesGrid');
+            const badgesCount = document.getElementById('userBadgesCount');
+            const noBadges = document.getElementById('userNoBadges');
+            badgesCard.style.display = 'block';
+
+            if (!badgesData.error && badgesData.data && badgesData.data.length > 0) {
+                const badges = badgesData.data.slice(0, 50); // Show max 50
+                badgesCount.textContent = badgesData.data.length;
+                noBadges.style.display = 'none';
+                badgesGrid.style.display = 'grid';
+
+                badgesGrid.innerHTML = badges.map(badge => `
+                    <div style="text-align: center; background: var(--bg-tertiary); padding: 12px; border-radius: 8px;" title="${escapeHtml(badge.displayName || badge.name)}">
+                        <img src="https://badges.roblox.com/v1/badges/${badge.id}/image" alt="${escapeHtml(badge.name)}" style="width: 80px; height: 80px; border-radius: 8px; margin-bottom: 8px; background: var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect fill=%22%23333%22 width=%2280%22 height=%2280%22/></svg>'">
+                        <div style="font-size: 11px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml((badge.displayName || badge.name).substring(0, 15))}</div>
+                    </div>
+                `).join('');
+            } else {
+                badgesCount.textContent = '0';
+                badgesGrid.style.display = 'none';
+                noBadges.style.display = 'block';
+            }
+        } catch (e) {
+            console.log('Badges error:', e);
+        }
+
+        // Load friends
+        showToast('Loading friends...', 'info');
+        try {
+            const friendsResponse = await fetch(`/proxy/users/${userId}/friends`);
+            const friendsData = await friendsResponse.json();
+
+            const friendsCard = document.getElementById('userFriendsCard');
+            const friendsGrid = document.getElementById('userFriendsGrid');
+            const friendsCount = document.getElementById('userFriendsCount');
+            friendsCard.style.display = 'block';
+
+            if (!friendsData.error && friendsData.data && friendsData.data.length > 0) {
+                const friends = friendsData.data.slice(0, 30); // Show max 30
+                friendsCount.textContent = friendsData.data.length;
+
+                friendsGrid.innerHTML = friends.map(friend => `
+                    <a href="https://www.roblox.com/users/${friend.id}/profile" target="_blank" style="text-decoration: none; text-align: center; background: var(--bg-tertiary); padding: 12px; border-radius: 8px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''">
+                        <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${friend.id}&width=100&height=100&format=png" alt="${escapeHtml(friend.name)}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 8px; background: var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect fill=%22%23333%22 width=%2280%22 height=%2280%22 rx=%2240%22/></svg>'">
+                        <div style="font-size: 11px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(friend.displayName)}</div>
+                        <div style="font-size: 10px; color: var(--text-secondary);">@${escapeHtml(friend.name)}</div>
+                    </a>
+                `).join('');
+            } else {
+                friendsCount.textContent = '0';
+                friendsGrid.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 20px;">No friends to display</div>';
+            }
+        } catch (e) {
+            console.log('Friends error:', e);
+        }
+
+        // Load username history
+        showToast('Loading username history...', 'info');
+        try {
+            const historyResponse = await fetch(`/proxy/users/${userId}/username-history`);
+            const historyData = await historyResponse.json();
+
+            const historyCard = document.getElementById('userHistoryCard');
+            const historyList = document.getElementById('userHistoryList');
+            historyCard.style.display = 'block';
+
+            if (!historyData.error && historyData.data && historyData.data.length > 0) {
+                historyList.innerHTML = `
+                    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 12px;">
+                        ${historyData.data.map((entry, index) => `
+                            <div style="display: flex; align-items: center; padding: 8px 0; ${index < historyData.data.length - 1 ? 'border-bottom: 1px solid var(--border);' : ''}">
+                                <span style="color: var(--text-secondary); font-size: 12px; width: 30px;">#${index + 1}</span>
+                                <span style="color: var(--text-primary); font-weight: 600; font-size: 14px;">${escapeHtml(entry.name)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                historyList.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 20px;">No username changes found</div>';
+            }
+        } catch (e) {
+            console.log('History error:', e);
         }
 
         showToast('User lookup complete!', 'success');

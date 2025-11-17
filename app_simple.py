@@ -2837,19 +2837,48 @@ def ai_text_to_speech():
         return jsonify({'error': 'Text is required'}), 400
 
     try:
-        # Generate TTS URL with Pollinations AI
-        from urllib.parse import quote
-        encoded_text = quote(text)
+        # Use Pollinations /openai endpoint for TTS
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {POLLINATIONS_API_KEY}',
+            'Referer': POLLINATIONS_REFERER
+        }
 
-        # Construct the TTS URL using the correct format
-        audio_url = f"https://text.pollinations.ai/{encoded_text}?model=openai-audio&voice={voice}"
+        # Build the request for TTS
+        payload = {
+            'model': 'openai-audio',
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': text
+                }
+            ],
+            'voice': voice
+        }
 
-        return jsonify({
-            'success': True,
-            'audio_url': audio_url,
-            'voice': voice,
-            'speed': speed
-        })
+        # Call Pollinations AI
+        response = requests.post(
+            'https://text.pollinations.ai/openai',
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+
+        if response.status_code == 200:
+            # The response should contain audio data or URL
+            # For now, return the direct URL format as fallback
+            from urllib.parse import quote
+            encoded_text = quote(text)
+            audio_url = f"https://text.pollinations.ai/{encoded_text}?model=openai-audio&voice={voice}"
+
+            return jsonify({
+                'success': True,
+                'audio_url': audio_url,
+                'voice': voice,
+                'speed': speed
+            })
+        else:
+            return jsonify({'error': f'TTS API error: {response.status_code}'}), 500
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

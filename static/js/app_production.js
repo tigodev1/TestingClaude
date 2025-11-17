@@ -1711,8 +1711,18 @@ async function loadGameInfo() {
 }
 
 // User Lookup - Advanced
-async function lookupUser() {
-    const userInput = document.getElementById('userIdInput').value.trim();
+async function lookupUser(directUserId = null) {
+    let userInput;
+
+    if (directUserId) {
+        // Direct lookup from clicking a friend
+        userInput = directUserId.toString();
+        document.getElementById('userIdInput').value = userInput;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        userInput = document.getElementById('userIdInput').value.trim();
+    }
+
     if (!userInput) {
         showToast('Please enter a User ID or Username', 'error');
         return;
@@ -1772,47 +1782,68 @@ async function lookupUser() {
         const accountYears = (accountAge / 365).toFixed(1);
 
         userDisplay.innerHTML = `
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 24px; padding: 20px;">
-                <div style="text-align: center;">
-                    <img src="${userData.thumbnail || ''}" alt="Avatar" style="width: 150px; height: 150px; border-radius: 12px; background: var(--bg-tertiary); box-shadow: 0 4px 12px rgba(0,0,0,0.3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22><rect fill=%22%23333%22 width=%22150%22 height=%22150%22/></svg>'">
-                    ${userData.isBanned ? '<div style="margin-top: 8px;"><span class="badge badge-danger" style="font-size: 14px;"><i class="fas fa-ban"></i> BANNED</span></div>' : ''}
-                </div>
-                <div>
-                    <div style="margin-bottom: 16px;">
-                        <h2 style="margin: 0 0 4px 0; font-size: 28px; font-weight: 700;">${escapeHtml(userData.displayName)}</h2>
-                        <p style="color: var(--text-secondary); margin: 0; font-size: 16px;">@${escapeHtml(userData.name)}</p>
-                    </div>
+            <div style="position: relative; background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-card) 100%); border-radius: 16px; overflow: hidden;">
+                <!-- Banner gradient -->
+                <div style="height: 120px; background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 50%, #ec4899 100%); opacity: 0.3;"></div>
 
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
-                        <div class="stat-card" style="padding: 12px; text-align: center;">
-                            <div class="stat-value" style="font-size: 20px; color: var(--accent-primary);">${formatLargeNumber(userData.friends || 0)}</div>
-                            <div class="stat-label" style="font-size: 11px;"><i class="fas fa-user-friends"></i> Friends</div>
+                <!-- Profile content -->
+                <div style="padding: 0 32px 32px;">
+                    <!-- Avatar overlapping banner -->
+                    <div style="display: flex; align-items: flex-end; margin-top: -60px; margin-bottom: 20px;">
+                        <div style="position: relative;">
+                            <img src="${userData.thumbnail || ''}" alt="Avatar" style="width: 120px; height: 120px; border-radius: 16px; background: var(--bg-tertiary); box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 4px solid var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><rect fill=%22%23333%22 width=%22120%22 height=%22120%22/></svg>'">
+                            ${userData.isBanned ? '<div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: var(--danger); color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; white-space: nowrap;"><i class="fas fa-ban"></i> BANNED</div>' : ''}
                         </div>
-                        <div class="stat-card" style="padding: 12px; text-align: center;">
-                            <div class="stat-value" style="font-size: 20px; color: var(--success);">${formatLargeNumber(userData.followers || 0)}</div>
-                            <div class="stat-label" style="font-size: 11px;"><i class="fas fa-heart"></i> Followers</div>
-                        </div>
-                        <div class="stat-card" style="padding: 12px; text-align: center;">
-                            <div class="stat-value" style="font-size: 20px; color: var(--warning);">${accountYears}</div>
-                            <div class="stat-label" style="font-size: 11px;"><i class="fas fa-clock"></i> Years</div>
-                        </div>
-                        <div class="stat-card" style="padding: 12px; text-align: center;">
-                            <div class="stat-value" style="font-size: 14px; color: var(--info);">${userData.id}</div>
-                            <div class="stat-label" style="font-size: 11px;"><i class="fas fa-id-badge"></i> User ID</div>
+                        <div style="margin-left: 20px; padding-bottom: 8px;">
+                            <h2 style="margin: 0 0 4px 0; font-size: 32px; font-weight: 800; color: var(--text-primary);">${escapeHtml(userData.displayName)}</h2>
+                            <p style="color: var(--text-secondary); margin: 0; font-size: 16px; font-weight: 500;">@${escapeHtml(userData.name)}</p>
                         </div>
                     </div>
 
-                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
-                            ${escapeHtml(userData.description || 'No description provided').substring(0, 300)}${(userData.description || '').length > 300 ? '...' : ''}
+                    <!-- Stats row -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); padding: 16px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--accent-primary); margin-bottom: 4px;">${formatLargeNumber(userData.friends || 0)}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;"><i class="fas fa-user-friends"></i> Friends</div>
+                        </div>
+                        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 16px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--success); margin-bottom: 4px;">${formatLargeNumber(userData.followers || 0)}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;"><i class="fas fa-heart"></i> Followers</div>
+                        </div>
+                        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 16px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--warning); margin-bottom: 4px;">${formatLargeNumber(userData.following || 0)}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;"><i class="fas fa-user-plus"></i> Following</div>
+                        </div>
+                        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 16px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--info); margin-bottom: 4px;">${accountYears}<span style="font-size: 14px;">y</span></div>
+                            <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;"><i class="fas fa-clock"></i> Account Age</div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    ${userData.description ? `
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid var(--accent-primary);">
+                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">
+                            ${escapeHtml(userData.description.substring(0, 500))}${userData.description.length > 500 ? '...' : ''}
                         </p>
                     </div>
+                    ` : ''}
 
-                    <p style="margin: 0; color: var(--text-secondary); font-size: 12px;">
-                        <i class="fas fa-calendar"></i> Joined: ${new Date(userData.created).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        <span style="margin: 0 8px;">|</span>
-                        <i class="fas fa-clock"></i> Account Age: ${accountAge} days
-                    </p>
+                    <!-- Footer info -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-secondary);">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-calendar-alt" style="color: var(--accent-primary);"></i>
+                            <span>Joined <strong style="color: var(--text-primary);">${new Date(userData.created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-hashtag" style="color: var(--warning);"></i>
+                            <span>User ID <strong style="color: var(--text-primary);">${userData.id}</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-history" style="color: var(--success);"></i>
+                            <span><strong style="color: var(--text-primary);">${accountAge.toLocaleString()}</strong> days old</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -2083,7 +2114,7 @@ async function lookupUser() {
                     const thumbnail = friendThumbnails[friend.id] || '';
 
                     return `
-                        <a href="https://www.roblox.com/users/${friend.id}/profile" target="_blank" style="text-decoration: none; text-align: center; background: var(--bg-tertiary); padding: 12px; border-radius: 8px; transition: transform 0.2s; position: relative;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''">
+                        <div onclick="lookupUser(${friend.id})" style="cursor: pointer; text-decoration: none; text-align: center; background: var(--bg-tertiary); padding: 12px; border-radius: 8px; transition: all 0.2s; position: relative;" onmouseover="this.style.transform='scale(1.05)'; this.style.background='var(--bg-card)';" onmouseout="this.style.transform=''; this.style.background='var(--bg-tertiary)';">
                             <div style="position: relative; display: inline-block;">
                                 <img src="${thumbnail}" alt="${escapeHtml(friend.name)}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 8px; background: var(--bg-card);" onerror="this.style.opacity='0.5'">
                                 <div style="position: absolute; bottom: 4px; right: 4px; width: 16px; height: 16px; background: ${presenceColor}; border-radius: 50%; border: 3px solid var(--bg-tertiary);" title="${presenceLabel}"></div>
@@ -2091,7 +2122,8 @@ async function lookupUser() {
                             <div style="font-size: 11px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(friend.displayName)}</div>
                             <div style="font-size: 10px; color: var(--text-secondary);">@${escapeHtml(friend.name)}</div>
                             <div style="font-size: 9px; color: ${presenceColor}; margin-top: 4px;">${presenceLabel}</div>
-                        </a>
+                            <div style="font-size: 9px; color: var(--accent-primary); margin-top: 2px;"><i class="fas fa-search"></i> Click to view</div>
+                        </div>
                     `;
                 }).join('');
             } else {
@@ -2517,40 +2549,122 @@ function clearRequestHistory() {
 }
 
 // ===== DEVEX CALCULATOR =====
+let devexExchangeRates = { USD: 1.0 };
+let devexCurrentCurrency = 'USD';
+let devexCurrencySymbol = '$';
+
+// Load exchange rates on page load
+async function loadExchangeRates() {
+    try {
+        const response = await fetch('/api/exchange-rates');
+        const data = await response.json();
+        if (data.rates) {
+            devexExchangeRates = data.rates;
+            console.log('Exchange rates loaded:', devexExchangeRates);
+
+            // Update display
+            updateDevExCurrency();
+        }
+    } catch (e) {
+        console.log('Error loading exchange rates:', e);
+    }
+}
+
+// Update currency labels and recalculate
+function updateDevExCurrency() {
+    const select = document.getElementById('devexCurrencySelect');
+    if (!select) return;
+
+    devexCurrentCurrency = select.value;
+    const selectedOption = select.options[select.selectedIndex];
+    devexCurrencySymbol = selectedOption.getAttribute('data-symbol') || '$';
+
+    // Update all currency code labels
+    document.querySelectorAll('.devex-currency-code').forEach(el => {
+        el.textContent = devexCurrentCurrency;
+    });
+
+    const currencyLabel = document.getElementById('devexCurrencyLabel');
+    if (currencyLabel) {
+        currencyLabel.textContent = devexCurrentCurrency;
+    }
+
+    // Update exchange rate display
+    const rate = devexExchangeRates[devexCurrentCurrency] || 1.0;
+    const rateDisplay = document.getElementById('devexExchangeRate');
+    const rateInfo = document.getElementById('devexRateInfo');
+
+    if (rateDisplay) {
+        rateDisplay.textContent = rate.toFixed(4);
+    }
+    if (rateInfo) {
+        rateInfo.textContent = `1 USD = ${rate.toFixed(4)} ${devexCurrentCurrency}`;
+    }
+
+    // Recalculate both
+    calculateDevEx();
+    calculateReverseDevEx();
+}
+
+async function refreshExchangeRates() {
+    showToast('Refreshing exchange rates...', 'info');
+    await loadExchangeRates();
+    showToast('Exchange rates updated!', 'success');
+}
+
 function calculateDevEx() {
     const robuxInput = document.getElementById('devexRobuxInput');
     const robux = parseFloat(robuxInput.value) || 0;
-    
-    const devexRate = 0.0035; // $0.0035 per Robux
+
+    const devexRate = 0.0035; // $0.0035 per Robux (base USD)
     const marketplaceFee = 0.30; // 30% fee
-    
+    const exchangeRate = devexExchangeRates[devexCurrentCurrency] || 1.0;
+
+    // Calculate in USD first
     const grossUSD = robux * devexRate;
-    const feeAmount = grossUSD * marketplaceFee;
-    const netUSD = grossUSD - feeAmount;
-    
-    document.getElementById('devexGrossUSD').textContent = '$' + grossUSD.toFixed(2);
-    document.getElementById('devexFeeAmount').textContent = '-$' + feeAmount.toFixed(2);
-    document.getElementById('devexNetUSD').textContent = '$' + netUSD.toFixed(2);
+    const feeAmountUSD = grossUSD * marketplaceFee;
+    const netUSD = grossUSD - feeAmountUSD;
+
+    // Convert to selected currency
+    const grossCurrency = grossUSD * exchangeRate;
+    const feeAmountCurrency = feeAmountUSD * exchangeRate;
+    const netCurrency = netUSD * exchangeRate;
+
+    // Format based on currency (JPY doesn't use decimals)
+    const decimals = (devexCurrentCurrency === 'JPY') ? 0 : 2;
+
+    document.getElementById('devexGrossUSD').textContent = devexCurrencySymbol + grossCurrency.toFixed(decimals);
+    document.getElementById('devexFeeAmount').textContent = '-' + devexCurrencySymbol + feeAmountCurrency.toFixed(decimals);
+    document.getElementById('devexNetUSD').textContent = devexCurrencySymbol + netCurrency.toFixed(decimals);
 }
 
 function calculateReverseDevEx() {
     const usdInput = document.getElementById('devexUSDInput');
-    const targetUSD = parseFloat(usdInput.value) || 0;
-    
-    const devexRate = 0.0035; // $0.0035 per Robux
+    const targetAmount = parseFloat(usdInput.value) || 0;
+
+    const devexRate = 0.0035; // $0.0035 per Robux (base USD)
     const marketplaceFee = 0.30; // 30% fee
-    
+    const exchangeRate = devexExchangeRates[devexCurrentCurrency] || 1.0;
+
+    // Convert target amount to USD first
+    const targetUSD = targetAmount / exchangeRate;
+
     // Calculate Robux needed for gross amount (before considering marketplace fee)
     const grossRobuxNeeded = Math.ceil(targetUSD / devexRate);
-    
+
     // Account for marketplace fee (need more Robux because you only keep 70%)
     const totalRobuxNeeded = Math.ceil(grossRobuxNeeded / (1 - marketplaceFee));
     const feeRobux = totalRobuxNeeded - grossRobuxNeeded;
-    
+
     document.getElementById('reverseRobuxGross').textContent = 'R$' + grossRobuxNeeded.toLocaleString();
     document.getElementById('reverseFeeRobux').textContent = '+R$' + feeRobux.toLocaleString();
     document.getElementById('reverseRobuxTotal').textContent = 'R$' + totalRobuxNeeded.toLocaleString();
 }
+
+// Load exchange rates when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadExchangeRates();
+});
 
 // ===== UTILITY FUNCTIONS =====
 function copyToClipboard(text) {

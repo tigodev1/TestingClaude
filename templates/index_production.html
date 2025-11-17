@@ -1287,10 +1287,41 @@
                     </div>
                 </div>
 
+                <!-- Currency selector -->
+                <div class="card" style="margin-bottom: 24px; border: 2px solid rgba(79,172,254,0.3);">
+                    <div style="padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <label class="form-label" style="margin-bottom: 8px;"><i class="fas fa-globe" style="color: #4facfe;"></i> Select Currency</label>
+                                <select id="devexCurrencySelect" class="form-input" onchange="updateDevExCurrency()" style="font-size: 16px; padding: 12px;">
+                                    <option value="USD" data-symbol="$">USD - US Dollar</option>
+                                    <option value="EUR" data-symbol="€">EUR - Euro</option>
+                                    <option value="GBP" data-symbol="£">GBP - British Pound</option>
+                                    <option value="CAD" data-symbol="$">CAD - Canadian Dollar</option>
+                                    <option value="AUD" data-symbol="$">AUD - Australian Dollar</option>
+                                    <option value="JPY" data-symbol="¥">JPY - Japanese Yen</option>
+                                    <option value="BRL" data-symbol="R$">BRL - Brazilian Real</option>
+                                    <option value="MXN" data-symbol="$">MXN - Mexican Peso</option>
+                                    <option value="INR" data-symbol="₹">INR - Indian Rupee</option>
+                                    <option value="PHP" data-symbol="₱">PHP - Philippine Peso</option>
+                                </select>
+                            </div>
+                            <div style="text-align: center; background: var(--bg-tertiary); padding: 12px 20px; border-radius: 8px;">
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Exchange Rate</div>
+                                <div style="font-size: 20px; font-weight: 700; color: var(--accent-primary);" id="devexExchangeRate">1.00</div>
+                                <div style="font-size: 11px; color: var(--text-secondary);" id="devexRateInfo">1 USD = 1.00 USD</div>
+                            </div>
+                            <button class="btn btn-secondary" onclick="refreshExchangeRates()" style="padding: 12px 16px;">
+                                <i class="fas fa-sync"></i> Refresh Rates
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                     <div class="card" style="border: 2px solid rgba(255,215,0,0.3);">
                         <div class="card-header" style="background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,170,0,0.1) 100%);">
-                            <h3 class="card-title"><i class="fas fa-coins" style="color: #ffd700;"></i> Robux to USD</h3>
+                            <h3 class="card-title"><i class="fas fa-coins" style="color: #ffd700;"></i> Robux to <span id="devexCurrencyLabel">USD</span></h3>
                         </div>
                         <div style="padding: 16px;">
                             <div class="form-group">
@@ -1300,7 +1331,7 @@
                             <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-top: 16px;">
                                 <div style="display: grid; gap: 16px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="color: var(--text-secondary);">Gross USD:</span>
+                                        <span style="color: var(--text-secondary);">Gross <span class="devex-currency-code">USD</span>:</span>
                                         <span style="font-size: 24px; font-weight: 700; color: #43e97b;" id="devexGrossUSD">$0.00</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1324,12 +1355,12 @@
 
                     <div class="card" style="border: 2px solid rgba(67,233,123,0.3);">
                         <div class="card-header" style="background: linear-gradient(135deg, rgba(67,233,123,0.1) 0%, rgba(56,249,215,0.1) 100%);">
-                            <h3 class="card-title"><i class="fas fa-dollar-sign" style="color: #43e97b;"></i> USD to Robux (Reverse)</h3>
+                            <h3 class="card-title"><i class="fas fa-dollar-sign" style="color: #43e97b;"></i> <span class="devex-currency-code">USD</span> to Robux (Reverse)</h3>
                         </div>
                         <div style="padding: 16px;">
                             <div class="form-group">
-                                <label class="form-label">Target USD Amount</label>
-                                <input type="number" class="form-input" id="devexUSDInput" placeholder="How much USD do you want?" oninput="calculateReverseDevEx()" style="border: 2px solid rgba(67,233,123,0.3); font-size: 18px; padding: 12px;">
+                                <label class="form-label">Target <span class="devex-currency-code">USD</span> Amount</label>
+                                <input type="number" class="form-input" id="devexUSDInput" placeholder="How much do you want?" oninput="calculateReverseDevEx()" style="border: 2px solid rgba(67,233,123,0.3); font-size: 18px; padding: 12px;">
                             </div>
                             <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-top: 16px;">
                                 <div style="display: grid; gap: 16px;">

@@ -544,6 +544,83 @@ def get_rate_limit():
     return jsonify({'remaining': 300, 'max': 300})
 
 
+@app.route('/api/exchange-rates')
+def get_exchange_rates():
+    """Fetch latest exchange rates from USD"""
+    try:
+        # Check cache first (cache for 1 hour)
+        cache_key = 'exchange_rates'
+        if cache_key in proxy_cache:
+            cached = proxy_cache[cache_key]
+            if time.time() - cached['time'] < 3600:  # 1 hour cache
+                return jsonify(cached['data'])
+
+        # Use exchangerate-api.com free tier
+        url = "https://open.er-api.com/v6/latest/USD"
+        response = requests.get(url, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+            # Extract just the rates we need
+            all_rates = data.get('rates', {})
+            supported_currencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'BRL', 'MXN', 'INR', 'PHP']
+
+            rates = {}
+            for currency in supported_currencies:
+                if currency in all_rates:
+                    rates[currency] = all_rates[currency]
+
+            result = {
+                'base': 'USD',
+                'rates': rates,
+                'last_updated': data.get('time_last_update_utc', datetime.now().isoformat())
+            }
+
+            # Cache the result
+            proxy_cache[cache_key] = {'data': result, 'time': time.time()}
+
+            return jsonify(result)
+        else:
+            # Fallback to hardcoded rates if API fails
+            return jsonify({
+                'base': 'USD',
+                'rates': {
+                    'USD': 1.0,
+                    'EUR': 0.92,
+                    'GBP': 0.79,
+                    'CAD': 1.36,
+                    'AUD': 1.53,
+                    'JPY': 149.50,
+                    'BRL': 4.97,
+                    'MXN': 17.15,
+                    'INR': 83.12,
+                    'PHP': 55.50
+                },
+                'last_updated': datetime.now().isoformat(),
+                'note': 'Using fallback rates'
+            })
+    except Exception as e:
+        print(f"Exchange rate API error: {e}")
+        # Fallback rates
+        return jsonify({
+            'base': 'USD',
+            'rates': {
+                'USD': 1.0,
+                'EUR': 0.92,
+                'GBP': 0.79,
+                'CAD': 1.36,
+                'AUD': 1.53,
+                'JPY': 149.50,
+                'BRL': 4.97,
+                'MXN': 17.15,
+                'INR': 83.12,
+                'PHP': 55.50
+            },
+            'last_updated': datetime.now().isoformat(),
+            'note': 'Using fallback rates due to error'
+        })
+
+
 # Analytics endpoints - Now with real data!
 @app.route('/api/analytics/dashboard')
 def analytics_dashboard():

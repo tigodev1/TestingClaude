@@ -1699,12 +1699,13 @@ def proxy_game_servers(universe_id):
 
 @app.route('/proxy/games/<universe_id>/passes')
 def proxy_game_passes(universe_id):
-    """Get game passes for a universe"""
+    """Get game passes for a universe (using Open Cloud API)"""
     client_ip = request.remote_addr
     if not check_proxy_rate_limit(client_ip):
         return jsonify({'error': 'Rate limit exceeded'}), 429
-    roblox_url = f"https://games.roblox.com/v1/games/{universe_id}/game-passes"
-    params = {'limit': 100, 'sortOrder': 'Asc'}
+    # Using new Open Cloud endpoint (old games.roblox.com endpoint deprecated Aug 31, 2025)
+    roblox_url = f"https://apis.roblox.com/game-passes/v1/universes/{universe_id}/game-passes"
+    params = {'passView': 'Full', 'pageSize': 100}
     cache_key = get_proxy_cache_key(roblox_url, params)
     if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
         log_proxy_request(client_ip, f'/proxy/games/{universe_id}/passes', roblox_url, 'GET', 200, 0, cached=True)
@@ -2527,9 +2528,9 @@ def get_game_analytics(universe_id):
         if fav_resp.status_code == 200:
             analytics['favorites'] = fav_resp.json()
 
-        # Get game passes
-        passes_url = f'https://games.roblox.com/v1/games/{universe_id}/game-passes'
-        passes_resp = requests.get(passes_url, timeout=30)
+        # Get game passes (using Open Cloud API)
+        passes_url = f'https://apis.roblox.com/game-passes/v1/universes/{universe_id}/game-passes'
+        passes_resp = requests.get(passes_url, params={'passView': 'Full', 'pageSize': 100}, timeout=30)
         if passes_resp.status_code == 200:
             analytics['game_passes'] = passes_resp.json()
 

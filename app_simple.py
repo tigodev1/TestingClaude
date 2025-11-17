@@ -2659,6 +2659,187 @@ def export_operations():
     })
 
 
+# ============= AI ENDPOINTS (Pollinations AI) =============
+
+POLLINATIONS_API_KEY = 'l_oWbEp2n5MW3IUC'
+POLLINATIONS_REFERER = 'https://tigoshub.com/'
+
+@app.route('/api/ai/generate-image')
+def ai_generate_image():
+    """Generate an image using Pollinations AI"""
+    prompt = request.args.get('prompt', '')
+    model = request.args.get('model', 'flux')
+    width = request.args.get('width', '1024')
+    height = request.args.get('height', '1024')
+    seed = request.args.get('seed', '')
+    enhance = request.args.get('enhance', 'true')
+
+    if not prompt:
+        return jsonify({'error': 'Prompt is required'}), 400
+
+    try:
+        # Build the Pollinations AI image URL
+        url_params = f"model={model}&width={width}&height={height}&enhance={enhance}"
+        if seed:
+            url_params += f"&seed={seed}"
+
+        # URL encode the prompt
+        from urllib.parse import quote
+        encoded_prompt = quote(prompt)
+
+        # Construct the image URL
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?{url_params}"
+
+        return jsonify({
+            'success': True,
+            'url': image_url,
+            'prompt': prompt,
+            'model': model,
+            'width': width,
+            'height': height
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/chat', methods=['POST'])
+def ai_chat():
+    """Chat with AI using Pollinations AI text generation"""
+    data = request.json
+    messages = data.get('messages', [])
+    model = data.get('model', 'openai')
+    temperature = data.get('temperature', 0.7)
+    max_tokens = data.get('max_tokens', 1000)
+    system_prompt = data.get('system', '')
+
+    if not messages:
+        return jsonify({'error': 'Messages are required'}), 400
+
+    try:
+        # Prepare the request to Pollinations AI
+        headers = {
+            'Content-Type': 'application/json',
+            'Referer': POLLINATIONS_REFERER
+        }
+
+        # Build the request payload
+        payload = {
+            'messages': messages,
+            'model': model,
+            'temperature': temperature,
+            'max_tokens': max_tokens
+        }
+
+        if system_prompt:
+            payload['system'] = system_prompt
+
+        # Call Pollinations AI
+        response = requests.post(
+            'https://text.pollinations.ai/',
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+
+        if response.status_code == 200:
+            ai_response = response.text
+            return jsonify({
+                'success': True,
+                'response': ai_response
+            })
+        else:
+            return jsonify({'error': f'AI API error: {response.status_code}'}), 500
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/vision', methods=['POST'])
+def ai_vision():
+    """Analyze images with Vision AI"""
+    data = request.json
+    image_url = data.get('image_url', '')
+    prompt = data.get('prompt', 'Describe this image')
+
+    if not image_url:
+        return jsonify({'error': 'Image URL is required'}), 400
+
+    try:
+        # Prepare the vision request
+        headers = {
+            'Content-Type': 'application/json',
+            'Referer': POLLINATIONS_REFERER
+        }
+
+        # Build messages for vision model
+        messages = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'text', 'text': prompt},
+                    {'type': 'image_url', 'image_url': {'url': image_url}}
+                ]
+            }
+        ]
+
+        payload = {
+            'messages': messages,
+            'model': 'claude',  # Claude supports vision
+            'max_tokens': 1000
+        }
+
+        # Call Pollinations AI
+        response = requests.post(
+            'https://text.pollinations.ai/',
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+
+        if response.status_code == 200:
+            analysis = response.text
+            return jsonify({
+                'success': True,
+                'analysis': analysis
+            })
+        else:
+            return jsonify({'error': f'Vision AI error: {response.status_code}'}), 500
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/text-to-speech', methods=['POST'])
+def ai_text_to_speech():
+    """Convert text to speech using Pollinations AI"""
+    data = request.json
+    text = data.get('text', '')
+    voice = data.get('voice', 'alloy')
+    speed = data.get('speed', 1.0)
+
+    if not text:
+        return jsonify({'error': 'Text is required'}), 400
+
+    try:
+        # Generate TTS URL with Pollinations AI
+        from urllib.parse import quote
+        encoded_text = quote(text)
+
+        # Construct the TTS URL
+        audio_url = f"https://text.pollinations.ai/openai/audio/speech?input={encoded_text}&voice={voice}&speed={speed}"
+
+        return jsonify({
+            'success': True,
+            'audio_url': audio_url,
+            'voice': voice,
+            'speed': speed
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print('\n' + '='*60)
     print('  Roblox DataStore Manager')

@@ -7,7 +7,7 @@ import os
 import json
 import sqlite3
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, __version__ as flask_version
+from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 
 # Import our API client
@@ -2531,7 +2531,7 @@ def system_health():
         'uptime': 'N/A',
         'version': '2.0.0',
         'python_version': sys.version.split()[0],
-        'flask_version': flask_version
+        'flask_version': '2.x'
     })
 
 

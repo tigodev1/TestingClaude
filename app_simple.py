@@ -2719,6 +2719,12 @@ def ai_chat():
         return jsonify({'error': 'Messages are required'}), 400
 
     try:
+        # If system prompt provided, add it as the first message
+        formatted_messages = []
+        if system_prompt:
+            formatted_messages.append({'role': 'system', 'content': system_prompt})
+        formatted_messages.extend(messages)
+
         # Prepare the request to Pollinations AI
         headers = {
             'Content-Type': 'application/json'
@@ -2727,10 +2733,12 @@ def ai_chat():
         # Build the request payload in OpenAI-compatible format
         payload = {
             'model': model,
-            'messages': messages,
+            'messages': formatted_messages,
             'temperature': temperature,
             'max_tokens': max_tokens
         }
+
+        print(f"[AI CHAT] Sending to Pollinations: {payload}")  # Debug logging
 
         # Call Pollinations AI using the /openai endpoint
         response = requests.post(
@@ -2739,6 +2747,9 @@ def ai_chat():
             headers=headers,
             timeout=30
         )
+
+        print(f"[AI CHAT] Response status: {response.status_code}")  # Debug logging
+        print(f"[AI CHAT] Response body: {response.text[:500]}")  # Debug logging
 
         if response.status_code == 200:
             result = response.json()
@@ -2749,9 +2760,12 @@ def ai_chat():
                 'response': ai_response
             })
         else:
-            return jsonify({'error': f'AI API error: {response.status_code}'}), 500
+            error_msg = f'AI API error: {response.status_code} - {response.text[:200]}'
+            print(f"[AI CHAT ERROR] {error_msg}")
+            return jsonify({'error': error_msg}), 500
 
     except Exception as e:
+        print(f"[AI CHAT EXCEPTION] {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 

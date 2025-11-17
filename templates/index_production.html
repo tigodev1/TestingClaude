@@ -112,6 +112,54 @@
                 grid-template-columns: 1fr !important;
             }
         }
+
+        /* Modern Logo Styling */
+        .logo {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+        }
+
+        .logo h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin: 0 0 6px 0;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo span {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 500;
+        }
+
+        .logo-icon {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -119,8 +167,9 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
-                <h1 style="color: #ff6b6b;">DataStore Manager v2</h1>
-                <span style="color: #ffd93d;">Roblox Open Cloud</span>
+                <div class="logo-icon"></div>
+                <h1>DataStore Manager</h1>
+                <span>Open Cloud API</span>
             </div>
 
             <nav class="nav-menu">

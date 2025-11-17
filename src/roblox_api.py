@@ -65,8 +65,9 @@ class RobloxDataStoreAPI:
         self.rate_limit_remaining -= 1
 
     def _make_request(self, method: str, endpoint: str, params: Optional[Dict] = None,
-                      data: Optional[Any] = None, headers: Optional[Dict] = None) -> Tuple[Any, int]:
-        """Make an API request with error handling and rate limiting"""
+                      data: Optional[Any] = None, headers: Optional[Dict] = None,
+                      retries: int = 3) -> Tuple[Any, int]:
+        """Make an API request with error handling, rate limiting, and retry logic"""
         self._handle_rate_limit()
 
         url = f"{self.BASE_URL}{endpoint}"
@@ -74,45 +75,65 @@ class RobloxDataStoreAPI:
         if headers:
             req_headers.update(headers)
 
-        start_time = time.time()
+        last_exception = None
 
-        try:
-            if method == "GET":
-                response = self.session.get(url, params=params, headers=req_headers)
-            elif method == "POST":
-                if data is not None:
-                    json_data = json.dumps(data, separators=(',', ':'))
-                    req_headers["content-md5"] = self._calculate_md5(data)
-                    response = self.session.post(url, params=params, data=json_data, headers=req_headers)
-                else:
-                    response = self.session.post(url, params=params, headers=req_headers)
-            elif method == "DELETE":
-                response = self.session.delete(url, params=params, headers=req_headers)
-            elif method == "PATCH":
-                if data is not None:
-                    json_data = json.dumps(data, separators=(',', ':'))
-                    response = self.session.patch(url, params=params, data=json_data, headers=req_headers)
-                else:
-                    response = self.session.patch(url, params=params, headers=req_headers)
-            else:
-                raise ValueError(f"Unsupported HTTP method: {method}")
-
-            response_time = time.time() - start_time
-            self._log_request(method, url, response.status_code, response_time)
-
-            # Parse response
-            if response.status_code == 204:
-                return None, response.status_code
+        for attempt in range(retries):
+            start_time = time.time()
 
             try:
-                return response.json(), response.status_code
-            except:
-                return response.text, response.status_code
+                if method == "GET":
+                    response = self.session.get(url, params=params, headers=req_headers, timeout=30)
+                elif method == "POST":
+                    if data is not None:
+                        json_data = json.dumps(data, separators=(',', ':'))
+                        req_headers["content-md5"] = self._calculate_md5(data)
+                        response = self.session.post(url, params=params, data=json_data, headers=req_headers, timeout=30)
+                    else:
+                        response = self.session.post(url, params=params, headers=req_headers, timeout=30)
+                elif method == "DELETE":
+                    response = self.session.delete(url, params=params, headers=req_headers, timeout=30)
+                elif method == "PATCH":
+                    if data is not None:
+                        json_data = json.dumps(data, separators=(',', ':'))
+                        response = self.session.patch(url, params=params, data=json_data, headers=req_headers, timeout=30)
+                    else:
+                        response = self.session.patch(url, params=params, headers=req_headers, timeout=30)
+                else:
+                    raise ValueError(f"Unsupported HTTP method: {method}")
 
-        except requests.exceptions.RequestException as e:
-            response_time = time.time() - start_time
-            self._log_request(method, url, 0, response_time)
-            raise Exception(f"Request failed: {str(e)}")
+                response_time = time.time() - start_time
+                self._log_request(method, url, response.status_code, response_time)
+
+                # Update rate limit from headers if available
+                if 'x-ratelimit-remaining' in response.headers:
+                    try:
+                        self.rate_limit_remaining = int(response.headers['x-ratelimit-remaining'])
+                    except:
+                        pass
+
+                # Parse response
+                if response.status_code == 204:
+                    return None, response.status_code
+
+                try:
+                    return response.json(), response.status_code
+                except:
+                    return response.text, response.status_code
+
+            except requests.exceptions.Timeout:
+                last_exception = "Request timeout"
+                if attempt < retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                    continue
+            except requests.exceptions.RequestException as e:
+                response_time = time.time() - start_time
+                self._log_request(method, url, 0, response_time)
+                last_exception = str(e)
+                if attempt < retries - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+
+        raise Exception(f"Request failed after {retries} attempts: {last_exception}")
 
     # ===== DATASTORE OPERATIONS =====
 

@@ -523,6 +523,17 @@ def health():
     return jsonify({'status': 'ok', 'timestamp': datetime.now().isoformat()})
 
 
+@app.route('/api/rate-limit')
+def get_rate_limit():
+    """Get current rate limit from API client"""
+    if api_client:
+        return jsonify({
+            'remaining': api_client.rate_limit_remaining,
+            'max': 300
+        })
+    return jsonify({'remaining': 300, 'max': 300})
+
+
 # Analytics endpoints - Now with real data!
 @app.route('/api/analytics/dashboard')
 def analytics_dashboard():

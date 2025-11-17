@@ -225,6 +225,21 @@ function decrementRateLimit() {
         lastKnownRateLimit--;
         updateRateLimitDisplay(lastKnownRateLimit);
     }
+    // Also fetch actual from server
+    fetchActualRateLimit();
+}
+
+// Fetch actual rate limit from server
+async function fetchActualRateLimit() {
+    try {
+        const response = await fetch('/api/rate-limit');
+        const data = await response.json();
+        if (data.remaining !== undefined) {
+            updateRateLimitDisplay(data.remaining);
+        }
+    } catch (error) {
+        console.log('Could not fetch rate limit:', error);
+    }
 }
 
 async function saveConfig() {
@@ -1177,7 +1192,7 @@ async function loadOrderedEntries() {
         return;
     }
 
-    showToast('Loading ordered entries...', 'info');
+    showToast('Loading ordered entries (retrying on timeout)...', 'info');
 
     try {
         const params = new URLSearchParams({
@@ -1194,6 +1209,8 @@ async function loadOrderedEntries() {
             // Better error messages for common issues
             if (data.error.includes('NOT_FOUND') || data.error.includes('not found')) {
                 showToast(`Ordered DataStore "${datastoreName}" not found. Create it first by adding an entry below, or check the name.`, 'warning');
+            } else if (data.error.includes('timeout')) {
+                showToast('Request timed out. Roblox API may be slow. Try again.', 'warning');
             } else {
                 showToast(`Error: ${data.error}`, 'error');
             }

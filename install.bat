@@ -1,4 +1,9 @@
 @echo off
+setlocal enabledelayedexpansion
+
+:: Change to the directory where this script is located
+cd /d "%~dp0"
+
 title Roblox DataStore Manager - Installer
 color 0B
 
@@ -7,11 +12,13 @@ echo ============================================================
 echo    Roblox DataStore Manager - Advanced Open Cloud Tool
 echo ============================================================
 echo.
+echo Current directory: %CD%
+echo.
 echo This installer will set up everything you need to run the
 echo DataStore Manager application.
 echo.
 echo Press any key to continue or CTRL+C to cancel...
-pause >nul
+pause
 
 echo.
 echo [1/6] Checking for Python installation...
@@ -113,4 +120,4 @@ echo   - README.md for full usage guide
 echo   - Visit https://create.roblox.com/credentials for API keys
 echo.
 echo Press any key to exit...
-pause >nul
+pause

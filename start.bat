@@ -1,4 +1,9 @@
 @echo off
+setlocal enabledelayedexpansion
+
+:: Change to the directory where this script is located
+cd /d "%~dp0"
+
 title Roblox DataStore Manager
 color 0A
 
@@ -6,6 +11,8 @@ echo.
 echo ============================================================
 echo    Roblox DataStore Manager - Starting...
 echo ============================================================
+echo.
+echo Current directory: %CD%
 echo.
 
 :: Check if virtual environment exists

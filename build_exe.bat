@@ -1,4 +1,9 @@
 @echo off
+setlocal enabledelayedexpansion
+
+:: Change to the directory where this script is located
+cd /d "%~dp0"
+
 title Roblox DataStore Manager - Build Executable
 color 0E
 
@@ -6,6 +11,8 @@ echo.
 echo ============================================================
 echo    Building Standalone Executable
 echo ============================================================
+echo.
+echo Current directory: %CD%
 echo.
 
 :: Check if virtual environment exists

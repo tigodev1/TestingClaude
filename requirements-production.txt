@@ -1,0 +1,24 @@
+# Core
+flask==3.0.0
+flask-cors==4.0.0
+flask-sqlalchemy==3.1.1
+flask-migrate==4.0.5
+flask-caching==2.1.0
+
+# Database
+pymysql==1.1.0
+cryptography==41.0.7
+
+# API
+requests==2.31.0
+python-dotenv==1.0.0
+
+# Production Server
+gunicorn==21.2.0
+gevent==23.9.1
+
+# Security
+flask-limiter==3.5.1
+
+# Utilities
+python-dateutil==2.8.2

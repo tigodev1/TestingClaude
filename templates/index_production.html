@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox DataStore Manager - Production</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>DataStore Manager</h1>
+                <span>Roblox Open Cloud</span>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" data-page="datastores">
+                    <i class="fas fa-database"></i>
+                    <span>DataStores</span>
+                </div>
+                <div class="nav-item" data-page="explorer">
+                    <i class="fas fa-folder-tree"></i>
+                    <span>Explorer</span>
+                </div>
+                <div class="nav-item" data-page="bulk">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Bulk Operations</span>
+                </div>
+                <div class="nav-item" data-page="backups">
+                    <i class="fas fa-cloud-arrow-down"></i>
+                    <span>Backups</span>
+                </div>
+                <div class="nav-item" data-page="analytics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </div>
+                <div class="nav-item" data-page="history">
+                    <i class="fas fa-clock-rotate-left"></i>
+                    <span>History</span>
+                </div>
+                <div class="nav-item" data-page="settings">
+                    <i class="fas fa-gear"></i>
+                    <span>Settings</span>
+                </div>
+            </nav>
+
+            <!-- Connection Status -->
+            <div style="padding: 16px; border-top: 1px solid var(--border);">
+                <div id="connectionStatus" class="status-indicator status-disconnected">
+                    <span class="status-dot"></span>
+                    <span>Not Connected</span>
+                </div>
+                <div class="rate-limit-bar">
+                    <div id="rateLimitFill" class="rate-limit-fill" style="width: 100%"></div>
+                </div>
+                <small style="color: var(--text-secondary); font-size: 11px;">
+                    Rate Limit: <span id="rateLimitText">300/300</span>
+                </small>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="page-dashboard" class="page active">
+                <h2 style="margin-bottom: 24px;">Dashboard</h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statOperations">0</div>
+                        <div class="stat-label">Total Operations</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statSuccess">0</div>
+                        <div class="stat-label">Successful</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statFailed">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statBackups">0</div>
+                        <div class="stat-label">Backups</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="showPage('datastores')">
+                            <i class="fas fa-database"></i> Browse DataStores
+                        </button>
+                        <button class="btn btn-secondary" onclick="showPage('explorer')">
+                            <i class="fas fa-search"></i> Quick Search
+                        </button>
+                        <button class="btn btn-success" onclick="exportModal()">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <button class="btn btn-warning" onclick="importModal()">
+                            <i class="fas fa-upload"></i> Import Data
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Operations</h3>
+                        <button class="btn btn-sm btn-secondary" onclick="loadHistory()">
+                            <i class="fas fa-refresh"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Operation</th>
+                                    <th>DataStore</th>
+                                    <th>Key</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentHistoryTable">
+                                <tr>
+                                    <td colspan="5" class="empty-state">No operations yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DataStores Page -->
+            <div id="page-datastores" class="page">
+                <h2 style="margin-bottom: 24px;">DataStores</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">All DataStores</h3>
+                        <button class="btn btn-primary" onclick="loadAllDatastores()">
+                            <i class="fas fa-sync"></i> Load DataStores
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="form-input" id="datastoreSearch" placeholder="Filter datastores...">
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="datastoreList">
+                                <tr>
+                                    <td colspan="3" class="empty-state">
+                                        <i class="fas fa-database"></i>
+                                        <p>Click "Load DataStores" to fetch your datastores</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explorer Page -->
+            <div id="page-explorer" class="page">
+                <h2 style="margin-bottom: 24px;">Data Explorer</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Browse Entries</h3>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <div class="form-group">
+                            <label class="form-label">DataStore Name</label>
+                            <input type="text" class="form-input" id="explorerDatastore" placeholder="Enter datastore name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Scope</label>
+                            <input type="text" class="form-input" id="explorerScope" value="global" placeholder="global">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Key Prefix</label>
+                            <input type="text" class="form-input" id="explorerPrefix" placeholder="Optional prefix filter">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="loadEntries()">
+                        <i class="fas fa-search"></i> Load Entries
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadAllEntriesBtn()">
+                        <i class="fas fa-list"></i> Load All (Paginated)
+                    </button>
+                </div>
+
+                <div class="card" id="entriesCard" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Entries (<span id="entryCount">0</span>)</h3>
+                        <div>
+                            <button class="btn btn-sm btn-success" onclick="createEntryModal()">
+                                <i class="fas fa-plus"></i> New Entry
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="bulkDeleteSelected()">
+                                <i class="fas fa-trash"></i> Delete Selected
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllEntries" onchange="toggleSelectAll()"></th>
+                                    <th>Key</th>
+                                    <th>Scope</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="entriesList">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Entry Details -->
+                <div class="card" id="entryDetailsCard" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Entry Details: <span id="currentEntryKey"></span></h3>
+                        <div>
+                            <button class="btn btn-sm btn-primary" onclick="saveEntry()">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="viewVersions()">
+                                <i class="fas fa-clock-rotate-left"></i> Versions
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="incrementEntryModal()">
+                                <i class="fas fa-plus-minus"></i> Increment
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab active" data-tab="json">JSON Editor</button>
+                        <button class="tab" data-tab="tree">Tree View</button>
+                        <button class="tab" data-tab="metadata">Metadata</button>
+                    </div>
+
+                    <div id="tab-json" class="tab-content active">
+                        <textarea class="form-input" id="entryValueEditor" style="min-height: 300px;"></textarea>
+                    </div>
+
+                    <div id="tab-tree" class="tab-content">
+                        <div class="json-editor" id="treeView"></div>
+                    </div>
+
+                    <div id="tab-metadata" class="tab-content">
+                        <div class="form-group">
+                            <label class="form-label">Version</label>
+                            <input type="text" class="form-input" id="entryVersion" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Created</label>
+                            <input type="text" class="form-input" id="entryCreated" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Updated</label>
+                            <input type="text" class="form-input" id="entryUpdated" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">User IDs</label>
+                            <input type="text" class="form-input" id="entryUserIds" placeholder="[1234, 5678]">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Attributes (JSON)</label>
+                            <textarea class="form-input" id="entryAttributes" style="min-height: 100px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Operations Page -->
+            <div id="page-bulk" class="page">
+                <h2 style="margin-bottom: 24px;">Bulk Operations</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Export DataStore</h3>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DataStore Name</label>
+                        <input type="text" class="form-input" id="exportDatastore" placeholder="Enter datastore name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Scope</label>
+                        <input type="text" class="form-input" id="exportScope" value="global">
+                    </div>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="exportMetadata" checked>
+                        <label>Include Metadata</label>
+                    </div>
+                    <button class="btn btn-success" onclick="exportDatastore()" style="margin-top: 16px;">
+                        <i class="fas fa-download"></i> Export to JSON
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Import Data</h3>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Target DataStore</label>
+                        <input type="text" class="form-input" id="importDatastore" placeholder="Enter datastore name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Scope</label>
+                        <input type="text" class="form-input" id="importScope" value="global">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Import Data (JSON Array)</label>
+                        <textarea class="form-input" id="importData" placeholder='[{"key": "player_123", "value": {"coins": 100}}]'></textarea>
+                    </div>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="importOverwrite">
+                        <label>Overwrite Existing Keys</label>
+                    </div>
+                    <button class="btn btn-warning" onclick="importDatastore()" style="margin-top: 16px;">
+                        <i class="fas fa-upload"></i> Import Data
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Bulk Delete</h3>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DataStore Name</label>
+                        <input type="text" class="form-input" id="bulkDeleteDatastore" placeholder="Enter datastore name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Keys to Delete (one per line)</label>
+                        <textarea class="form-input" id="bulkDeleteKeys" placeholder="key1&#10;key2&#10;key3"></textarea>
+                    </div>
+                    <button class="btn btn-danger" onclick="bulkDelete()" style="margin-top: 16px;">
+                        <i class="fas fa-trash"></i> Delete Keys
+                    </button>
+                </div>
+            </div>
+
+            <!-- Backups Page -->
+            <div id="page-backups" class="page">
+                <h2 style="margin-bottom: 24px;">Backup History</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">All Backups</h3>
+                        <button class="btn btn-primary" onclick="loadBackups()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>DataStore</th>
+                                    <th>Entries</th>
+                                    <th>File</th>
+                                </tr>
+                            </thead>
+                            <tbody id="backupsList">
+                                <tr>
+                                    <td colspan="4" class="empty-state">No backups yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div id="page-analytics" class="page">
+                <h2 style="margin-bottom: 24px;">Analytics & Insights</h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="analyticsSuccessRate">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="analyticsAvgResponse">0ms</div>
+                        <div class="stat-label">Avg Response Time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="analyticsReadOps">0</div>
+                        <div class="stat-label">Read Operations</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="analyticsWriteOps">0</div>
+                        <div class="stat-label">Write Operations</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Operations Over Time</h3>
+                        <select class="form-input" style="width: auto;" id="chartTimeRange" onchange="loadAnalyticsCharts()">
+                            <option value="7">Last 7 Days</option>
+                            <option value="14">Last 14 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                        </select>
+                    </div>
+                    <canvas id="operationsChart" height="100"></canvas>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Operation Types</h3>
+                        </div>
+                        <canvas id="operationTypesChart" height="200"></canvas>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Top DataStores</h3>
+                        </div>
+                        <canvas id="topDatastoresChart" height="200"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Error Analysis</h3>
+                        <button class="btn btn-sm btn-secondary" onclick="loadErrorAnalysis()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="errorAnalysis">
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>No errors to analyze</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div id="page-history" class="page">
+                <h2 style="margin-bottom: 24px;">Operation History</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">All Operations</h3>
+                        <button class="btn btn-primary" onclick="loadFullHistory()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Operation</th>
+                                    <th>DataStore</th>
+                                    <th>Key</th>
+                                    <th>Details</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullHistoryTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="page-settings" class="page">
+                <h2 style="margin-bottom: 24px;">Settings</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">API Configuration</h3>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">API Key</label>
+                        <input type="password" class="form-input" id="apiKeyInput" placeholder="Enter your Roblox Open Cloud API Key">
+                        <small style="color: var(--text-secondary);">Get your API key from <a href="https://create.roblox.com/credentials" target="_blank" style="color: var(--accent-primary);">create.roblox.com/credentials</a></small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Universe ID</label>
+                        <input type="text" class="form-input" id="universeIdInput" placeholder="Enter your game's Universe ID">
+                        <small style="color: var(--text-secondary);">Found in your game's settings on Roblox</small>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <button class="btn btn-primary" onclick="saveConfig()">
+                            <i class="fas fa-save"></i> Save Configuration
+                        </button>
+                        <button class="btn btn-secondary" onclick="testConnection()">
+                            <i class="fas fa-plug"></i> Test Connection
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">API Request Log</h3>
+                        <button class="btn btn-sm btn-secondary" onclick="loadRequestLog()">
+                            <i class="fas fa-refresh"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Method</th>
+                                    <th>Endpoint</th>
+                                    <th>Status</th>
+                                    <th>Time (ms)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestLogTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Modals -->
+    <div class="modal" id="versionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Version History</h3>
+                <button class="modal-close" onclick="closeModal('versionModal')">&times;</button>
+            </div>
+            <div id="versionsList"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="createEntryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Entry</h3>
+                <button class="modal-close" onclick="closeModal('createEntryModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Key Name</label>
+                <input type="text" class="form-input" id="newEntryKey" placeholder="Enter key name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Value (JSON)</label>
+                <textarea class="form-input" id="newEntryValue" placeholder='{"coins": 100, "level": 1}'></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="createNewEntry()">Create Entry</button>
+        </div>
+    </div>
+
+    <div class="modal" id="incrementModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Increment Entry</h3>
+                <button class="modal-close" onclick="closeModal('incrementModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Increment By</label>
+                <input type="number" class="form-input" id="incrementValue" value="1">
+            </div>
+            <button class="btn btn-primary" onclick="incrementEntry()">Increment</button>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/analytics.js"></script>
+    <script>
+        // Override showPage to load analytics
+        const originalShowPage = showPage;
+        showPage = function(pageName) {
+            originalShowPage(pageName);
+            if (pageName === 'analytics') {
+                loadAnalyticsCharts();
+            }
+        };
+    </script>
+</body>
+</html>

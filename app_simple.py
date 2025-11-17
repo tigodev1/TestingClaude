@@ -1144,6 +1144,280 @@ def get_group_games():
         return jsonify({'error': str(e)}), 500
 
 
+# ===== PROXY ENDPOINTS =====
+# Integrated proxy with caching and analytics
+
+import time
+import hashlib
+
+# Proxy cache and rate limiting
+proxy_cache = {}
+PROXY_CACHE_TTL = 60  # seconds
+proxy_rate_limits = {}
+PROXY_RATE_LIMIT_WINDOW = 60
+PROXY_RATE_LIMIT_MAX = 100
+
+PROXY_DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'proxy.db')
+
+
+def init_proxy_db():
+    """Initialize proxy database"""
+    conn = sqlite3.connect(PROXY_DB_PATH)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS proxy_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        client_ip TEXT,
+        endpoint TEXT,
+        roblox_api TEXT,
+        method TEXT,
+        status_code INTEGER,
+        response_time_ms INTEGER,
+        cached INTEGER,
+        error TEXT
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS proxy_stats (
+        id INTEGER PRIMARY KEY,
+        total_requests INTEGER DEFAULT 0,
+        cached_requests INTEGER DEFAULT 0,
+        failed_requests INTEGER DEFAULT 0,
+        total_bandwidth_kb REAL DEFAULT 0,
+        last_updated TEXT
+    )''')
+    c.execute('INSERT OR IGNORE INTO proxy_stats (id, total_requests, last_updated) VALUES (1, 0, ?)',
+              (datetime.now().isoformat(),))
+    conn.commit()
+    conn.close()
+
+
+def log_proxy_request(client_ip, endpoint, roblox_api, method, status_code, response_time_ms, cached=False, error=''):
+    """Log proxy request"""
+    try:
+        conn = sqlite3.connect(PROXY_DB_PATH)
+        c = conn.cursor()
+        c.execute('''INSERT INTO proxy_requests (timestamp, client_ip, endpoint, roblox_api, method, status_code, response_time_ms, cached, error)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                  (datetime.now().isoformat(), client_ip, endpoint, roblox_api, method, status_code, response_time_ms, int(cached), error))
+        c.execute('UPDATE proxy_stats SET total_requests = total_requests + 1, last_updated = ? WHERE id = 1',
+                  (datetime.now().isoformat(),))
+        if cached:
+            c.execute('UPDATE proxy_stats SET cached_requests = cached_requests + 1 WHERE id = 1')
+        if status_code >= 400:
+            c.execute('UPDATE proxy_stats SET failed_requests = failed_requests + 1 WHERE id = 1')
+        conn.commit()
+        conn.close()
+    except:
+        pass
+
+
+def check_proxy_rate_limit(client_ip):
+    """Check rate limit"""
+    now = time.time()
+    if client_ip not in proxy_rate_limits:
+        proxy_rate_limits[client_ip] = {'count': 0, 'window_start': now}
+    client_rate = proxy_rate_limits[client_ip]
+    if now - client_rate['window_start'] > PROXY_RATE_LIMIT_WINDOW:
+        client_rate['count'] = 0
+        client_rate['window_start'] = now
+    if client_rate['count'] >= PROXY_RATE_LIMIT_MAX:
+        return False
+    client_rate['count'] += 1
+    return True
+
+
+def get_proxy_cache_key(url, params=None):
+    """Generate cache key"""
+    key_data = url + json.dumps(params or {}, sort_keys=True)
+    return hashlib.md5(key_data.encode()).hexdigest()
+
+
+def proxy_roblox_request(roblox_url, method='GET', params=None, json_data=None):
+    """Make proxied request to Roblox"""
+    import requests as req
+    start_time = time.time()
+    headers = {'User-Agent': 'RobloxProxy/1.0', 'Accept': 'application/json'}
+    try:
+        if method == 'GET':
+            response = req.get(roblox_url, params=params, headers=headers, timeout=30)
+        else:
+            response = req.post(roblox_url, params=params, json=json_data, headers=headers, timeout=30)
+        response_time = int((time.time() - start_time) * 1000)
+        try:
+            data = response.json()
+        except:
+            data = {'raw': response.text}
+        return data, response.status_code, response_time
+    except req.exceptions.Timeout:
+        return {'error': 'Timeout'}, 504, int((time.time() - start_time) * 1000)
+    except Exception as e:
+        return {'error': str(e)}, 500, int((time.time() - start_time) * 1000)
+
+
+# Initialize proxy DB
+init_proxy_db()
+
+
+@app.route('/proxy/users/<user_id>')
+def proxy_user_info(user_id):
+    """Proxy user info"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    roblox_url = f"https://users.roblox.com/v1/users/{user_id}"
+    cache_key = get_proxy_cache_key(roblox_url)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/users/{user_id}', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url)
+    log_proxy_request(client_ip, f'/proxy/users/{user_id}', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/username', methods=['POST'])
+def proxy_username_lookup():
+    """Proxy username lookup"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    req_data = request.get_json()
+    usernames = req_data.get('usernames', [])
+    roblox_url = "https://users.roblox.com/v1/usernames/users"
+    data, status, response_time = proxy_roblox_request(roblox_url, method='POST', json_data={'usernames': usernames, 'excludeBannedUsers': False})
+    log_proxy_request(client_ip, '/proxy/users/username', roblox_url, 'POST', status, response_time)
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/games')
+def proxy_user_games(user_id):
+    """Proxy user games"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    limit = request.args.get('limit', 50)
+    access_filter = request.args.get('accessFilter', 2)
+    roblox_url = f"https://games.roblox.com/v2/users/{user_id}/games"
+    params = {'accessFilter': access_filter, 'limit': limit, 'sortOrder': 'Asc'}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/users/{user_id}/games', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, f'/proxy/users/{user_id}/games', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/groups/<group_id>/games')
+def proxy_group_games(group_id):
+    """Proxy group games"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    limit = request.args.get('limit', 50)
+    access_filter = request.args.get('accessFilter', 2)
+    roblox_url = f"https://games.roblox.com/v2/groups/{group_id}/games"
+    params = {'accessFilter': access_filter, 'limit': limit, 'sortOrder': 'Asc'}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, f'/proxy/groups/{group_id}/games', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, f'/proxy/groups/{group_id}/games', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/thumbnails/games')
+def proxy_game_thumbnails():
+    """Proxy game thumbnails"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    universe_ids = request.args.get('universeIds', '')
+    size = request.args.get('size', '512x512')
+    roblox_url = "https://thumbnails.roblox.com/v1/games/icons"
+    params = {'universeIds': universe_ids, 'size': size, 'format': 'Png', 'isCircular': 'false'}
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, '/proxy/thumbnails/games', roblox_url, 'GET', 200, 0, cached=True)
+        return jsonify(proxy_cache[cache_key]['data'])
+    data, status, response_time = proxy_roblox_request(roblox_url, params=params)
+    log_proxy_request(client_ip, '/proxy/thumbnails/games', roblox_url, 'GET', status, response_time)
+    if status == 200:
+        proxy_cache[cache_key] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/analytics/stats')
+def proxy_analytics_stats():
+    """Get proxy stats"""
+    try:
+        conn = sqlite3.connect(PROXY_DB_PATH)
+        c = conn.cursor()
+        c.execute('SELECT total_requests, cached_requests, failed_requests FROM proxy_stats WHERE id = 1')
+        row = c.fetchone()
+        conn.close()
+        if row:
+            cache_hit_rate = (row[1] / row[0] * 100) if row[0] > 0 else 0
+            success_rate = ((row[0] - row[2]) / row[0] * 100) if row[0] > 0 else 100
+            return jsonify({
+                'total_requests': row[0],
+                'cached_requests': row[1],
+                'failed_requests': row[2],
+                'cache_hit_rate': round(cache_hit_rate, 1),
+                'success_rate': round(success_rate, 1)
+            })
+        return jsonify({'error': 'No stats'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/proxy/analytics/top-endpoints')
+def proxy_analytics_top_endpoints():
+    """Get top endpoints"""
+    try:
+        days = int(request.args.get('days', 7))
+        limit = int(request.args.get('limit', 10))
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+        conn = sqlite3.connect(PROXY_DB_PATH)
+        c = conn.cursor()
+        c.execute('''SELECT endpoint, COUNT(*) as count, AVG(response_time_ms) as avg_time
+                     FROM proxy_requests WHERE timestamp > ?
+                     GROUP BY endpoint ORDER BY count DESC LIMIT ?''', (cutoff, limit))
+        rows = c.fetchall()
+        conn.close()
+        endpoints = [{'endpoint': row[0], 'count': row[1], 'avg_response_ms': round(row[2], 1)} for row in rows]
+        return jsonify({'endpoints': endpoints})
+    except Exception as e:
+        return jsonify({'endpoints': []})
+
+
+@app.route('/proxy/analytics/recent')
+def proxy_analytics_recent():
+    """Get recent requests"""
+    try:
+        limit = int(request.args.get('limit', 50))
+        conn = sqlite3.connect(PROXY_DB_PATH)
+        c = conn.cursor()
+        c.execute('''SELECT timestamp, client_ip, endpoint, roblox_api, method, status_code, response_time_ms, cached, error
+                     FROM proxy_requests ORDER BY id DESC LIMIT ?''', (limit,))
+        rows = c.fetchall()
+        conn.close()
+        requests_list = []
+        for row in rows:
+            requests_list.append({
+                'timestamp': row[0], 'client_ip': row[1], 'endpoint': row[2], 'roblox_api': row[3],
+                'method': row[4], 'status_code': row[5], 'response_time_ms': row[6], 'cached': bool(row[7]), 'error': row[8]
+            })
+        return jsonify({'requests': requests_list})
+    except Exception as e:
+        return jsonify({'requests': []})
+
+
 if __name__ == '__main__':
     print('\n' + '='*60)
     print('  Roblox DataStore Manager')

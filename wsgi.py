@@ -1,13 +1,7 @@
 """
-WSGI Entry Point for Production
+WSGI Entry Point - Simple Production App
 """
-import os
-from app_production import create_app
-
-# Set production environment
-os.environ.setdefault('FLASK_ENV', 'production')
-
-app = create_app('production')
+from app_simple import app
 
 if __name__ == "__main__":
     app.run()

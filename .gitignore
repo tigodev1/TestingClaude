@@ -36,6 +36,8 @@ backups/
 logs/
 *.db
 *.sqlite3
+flask.log
+nohup.out
 
 # Config files with sensitive data
 config.json

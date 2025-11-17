@@ -2727,15 +2727,15 @@ def ai_chat():
 
         # Prepare the request to Pollinations AI
         headers = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Referer': POLLINATIONS_REFERER
         }
 
         # Build the request payload in OpenAI-compatible format
+        # Only include required fields to avoid 400 errors
         payload = {
             'model': model,
-            'messages': formatted_messages,
-            'temperature': temperature,
-            'max_tokens': max_tokens
+            'messages': formatted_messages
         }
 
         print(f"[AI CHAT] Sending to Pollinations: {payload}")  # Debug logging
@@ -2782,7 +2782,8 @@ def ai_vision():
     try:
         # Prepare the vision request
         headers = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Referer': POLLINATIONS_REFERER
         }
 
         # Build messages for vision model in OpenAI-compatible format
@@ -2798,8 +2799,7 @@ def ai_vision():
 
         payload = {
             'model': 'openai',  # Use openai model for vision
-            'messages': messages,
-            'max_tokens': 1000
+            'messages': messages
         }
 
         # Call Pollinations AI using the /openai endpoint

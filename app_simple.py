@@ -10,6 +10,10 @@ import requests
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Import our API client
 import sys
@@ -2662,8 +2666,8 @@ def export_operations():
 
 # ============= AI ENDPOINTS (Pollinations AI) =============
 
-POLLINATIONS_API_KEY = 'l_oWbEp2n5MW3IUC'
-POLLINATIONS_REFERER = 'https://tigoshub.com/'
+POLLINATIONS_API_KEY = os.getenv('POLLINATIONS_API_KEY', 'SANEA7vYHQjrDtEI')
+POLLINATIONS_REFERER = os.getenv('POLLINATIONS_REFERER', 'https://tigoshub.com/')
 
 @app.route('/api/ai/generate-image')
 def ai_generate_image():
@@ -2728,6 +2732,7 @@ def ai_chat():
         # Prepare the request to Pollinations AI
         headers = {
             'Content-Type': 'application/json',
+            'Authorization': f'Bearer {POLLINATIONS_API_KEY}',
             'Referer': POLLINATIONS_REFERER
         }
 
@@ -2783,6 +2788,7 @@ def ai_vision():
         # Prepare the vision request
         headers = {
             'Content-Type': 'application/json',
+            'Authorization': f'Bearer {POLLINATIONS_API_KEY}',
             'Referer': POLLINATIONS_REFERER
         }
 

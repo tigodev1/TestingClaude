@@ -1283,6 +1283,23 @@ def proxy_roblox_request(roblox_url, method='GET', params=None, json_data=None):
         return {'error': f'Request failed: {str(e)}'}, 500, int((time.time() - start_time) * 1000)
 
 
+def make_proxy_request(roblox_url, endpoint_name, method='GET', params=None, json_data=None):
+    """Helper function to make a proxied request with rate limiting and logging"""
+    client_ip = request.remote_addr
+    if not check_proxy_rate_limit(client_ip):
+        return {'error': 'Rate limit exceeded (100 req/min)'}, 429
+
+    cache_key = get_proxy_cache_key(roblox_url, params)
+    if cache_key in proxy_cache and time.time() - proxy_cache[cache_key]['time'] < PROXY_CACHE_TTL:
+        log_proxy_request(client_ip, endpoint_name, roblox_url, method, 200, 0, cached=True)
+        return proxy_cache[cache_key]['data'], 200
+
+    data, status, response_time = proxy_roblox_request(roblox_url, method=method, params=params, json_data=json_data)
+    log_proxy_request(client_ip, endpoint_name, roblox_url, method, status, response_time)
+
+    return data, status
+
+
 # Initialize proxy DB
 init_proxy_db()
 

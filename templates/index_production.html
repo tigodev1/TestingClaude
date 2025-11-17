@@ -679,38 +679,67 @@
                         <p style="margin-bottom: 16px; color: var(--text-secondary);">
                             Share these proxy endpoints with your friends! All requests are cached (60s TTL) and rate limited (100 req/min per IP).
                         </p>
-                        <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 11px; line-height: 1.6;">
+                        <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 10px; line-height: 1.5; max-height: 400px; overflow-y: auto;">
                             <div style="margin-bottom: 12px;">
-                                <strong style="color: var(--accent-primary);">User Endpoints:</strong><br>
-                                <code>GET /proxy/users/{userId}</code> - User profile info<br>
-                                <code>POST /proxy/users/username</code> - Resolve username to ID<br>
-                                <code>GET /proxy/users/{userId}/games</code> - User's created games<br>
+                                <strong style="color: var(--accent-primary);">User Endpoints (15):</strong><br>
+                                <code>GET /proxy/users/{userId}</code> - Profile info<br>
+                                <code>POST /proxy/users/username</code> - Resolve username<br>
+                                <code>GET /proxy/users/{userId}/games</code> - Created games<br>
                                 <code>GET /proxy/users/{userId}/presence</code> - Online status<br>
-                                <code>GET /proxy/users/{userId}/badges</code> - User's badges<br>
+                                <code>GET /proxy/users/{userId}/badges</code> - User badges<br>
                                 <code>GET /proxy/users/{userId}/friends</code> - Friends list<br>
-                                <code>GET /proxy/inventory/{userId}?assetTypes=...</code> - User inventory
+                                <code>GET /proxy/users/{userId}/followers</code> - Followers<br>
+                                <code>GET /proxy/users/{userId}/followings</code> - Following<br>
+                                <code>GET /proxy/users/{userId}/avatar</code> - Avatar items<br>
+                                <code>GET /proxy/users/{userId}/outfits</code> - Saved outfits<br>
+                                <code>GET /proxy/users/{userId}/status</code> - Custom status<br>
+                                <code>GET /proxy/users/{userId}/username-history</code> - Name history<br>
+                                <code>GET /proxy/inventory/{userId}?assetTypes=...</code> - Inventory<br>
+                                <code>GET /proxy/premium/users/{userId}/validate</code> - Check Premium
                             </div>
                             <div style="margin-bottom: 12px;">
-                                <strong style="color: var(--success);">Group Endpoints:</strong><br>
-                                <code>GET /proxy/groups/{groupId}/games</code> - Group's games<br>
-                                <code>GET /proxy/groups/{groupId}/roles</code> - Group roles<br>
-                                <code>GET /proxy/groups/{groupId}/members</code> - Group members
+                                <strong style="color: var(--success);">Group Endpoints (8):</strong><br>
+                                <code>GET /proxy/groups/{groupId}</code> - Group info<br>
+                                <code>GET /proxy/groups/{groupId}/games</code> - Group games<br>
+                                <code>GET /proxy/groups/{groupId}/roles</code> - Role hierarchy<br>
+                                <code>GET /proxy/groups/{groupId}/members</code> - Members list<br>
+                                <code>GET /proxy/groups/{groupId}/wall</code> - Wall posts<br>
+                                <code>GET /proxy/groups/{groupId}/social-links</code> - Social links<br>
+                                <code>GET /proxy/groups/{groupId}/audit-log</code> - Audit log
                             </div>
                             <div style="margin-bottom: 12px;">
-                                <strong style="color: var(--warning);">Game Endpoints:</strong><br>
+                                <strong style="color: var(--warning);">Game Endpoints (12):</strong><br>
                                 <code>GET /proxy/games/{universeId}/servers</code> - Active servers<br>
                                 <code>GET /proxy/games/{universeId}/passes</code> - Game passes<br>
-                                <code>GET /proxy/games/search?keyword=...</code> - Search games
+                                <code>GET /proxy/games/{universeId}/votes</code> - Likes/Dislikes<br>
+                                <code>GET /proxy/games/{universeId}/media</code> - Screenshots/Videos<br>
+                                <code>GET /proxy/games/{universeId}/social-links</code> - Social links<br>
+                                <code>GET /proxy/games/{universeId}/favorites/count</code> - Favorites<br>
+                                <code>GET /proxy/games/{placeId}/details</code> - Place details<br>
+                                <code>GET /proxy/games/search?keyword=...</code> - Search games<br>
+                                <code>GET /proxy/games/sorts</code> - Available sorts<br>
+                                <code>GET /proxy/games/list?sortToken=...</code> - Games by sort<br>
+                                <code>GET /proxy/develop/games/{universeId}/revenue</code> - Revenue stats
                             </div>
                             <div style="margin-bottom: 12px;">
-                                <strong style="color: var(--info);">Asset & Catalog:</strong><br>
+                                <strong style="color: var(--info);">Economy & Assets (6):</strong><br>
                                 <code>GET /proxy/assets/{assetId}</code> - Asset details<br>
                                 <code>GET /proxy/badges/{badgeId}</code> - Badge info<br>
-                                <code>GET /proxy/catalog/search?keyword=...</code> - Search catalog
+                                <code>GET /proxy/catalog/search?keyword=...</code> - Search catalog<br>
+                                <code>GET /proxy/economy/resale-tax</code> - Current tax rate<br>
+                                <code>GET /proxy/economy/asset/{assetId}/resellers</code> - Limited resellers<br>
+                                <code>GET /proxy/economy/asset/{assetId}/resale-data</code> - RAP & volume
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #ff6b9d;">Thumbnails (4):</strong><br>
+                                <code>GET /proxy/thumbnails/games?universeIds=...</code> - Game icons<br>
+                                <code>GET /proxy/thumbnails/users?userIds=...</code> - User avatars<br>
+                                <code>GET /proxy/thumbnails/groups?groupIds=...</code> - Group icons<br>
+                                <code>GET /proxy/thumbnails/assets?assetIds=...</code> - Asset thumbnails
                             </div>
                             <div>
-                                <strong style="color: #ff6b9d;">Thumbnails:</strong><br>
-                                <code>GET /proxy/thumbnails/games?universeIds=id1,id2</code> - Batch game icons
+                                <strong style="color: #9d4edd;">Misc:</strong><br>
+                                <code>GET /proxy/localization/supported-languages</code> - Languages
                             </div>
                         </div>
                     </div>
@@ -742,18 +771,43 @@
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div>
-                                <label class="form-label" style="margin-bottom: 8px;">Quick Tests</label>
-                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1')">User Info</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/games')">User Games</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/badges')">User Badges</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/friends')">User Friends</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/presence')">Presence</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/groups/1/roles')">Group Roles</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/1/servers')">Game Servers</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/assets/1818')">Asset Info</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/catalog/search?keyword=dominus')">Search Catalog</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('POST', '/proxy/users/username', '{&quot;usernames&quot;: [&quot;Builderman&quot;]}')">Username Lookup</button>
+                                <label class="form-label" style="margin-bottom: 8px;">Quick Tests (45+ endpoints)</label>
+                                <div style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 200px; overflow-y: auto; padding: 4px;">
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1')" title="Get Roblox user profile">User Info</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/games')" title="User's created games">User Games</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/badges')" title="Badges earned">User Badges</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/friends')" title="Friends list">Friends</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/followers')" title="Followers list">Followers</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/followings')" title="Following list">Following</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/presence')" title="Online status">Presence</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/avatar')" title="Current avatar items">Avatar</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/outfits')" title="Saved outfits">Outfits</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/status')" title="Custom status">Status</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/users/1/username-history')" title="Past usernames">Name History</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/premium/users/1/validate')" title="Premium membership">Premium</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/groups/1')" title="Group details">Group Info</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/groups/1/roles')" title="Group role hierarchy">Group Roles</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/groups/1/members')" title="Member list">Group Members</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/groups/1/wall')" title="Group wall posts">Group Wall</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/groups/1/games')" title="Group's games">Group Games</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/1/servers')" title="Active game servers">Servers</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/1/passes')" title="Game passes">Passes</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/1/votes')" title="Likes/Dislikes">Votes</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/1/media')" title="Screenshots/Videos">Media</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/1/favorites/count')" title="Favorite count">Favorites</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/sorts')" title="Available game sorts">Game Sorts</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/assets/1818')" title="Asset metadata">Asset Info</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/badges/1')" title="Badge details">Badge Info</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/catalog/search?keyword=dominus')" title="Search catalog">Catalog</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/games/search?keyword=simulator')" title="Search games">Game Search</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/economy/resale-tax')" title="Current resale tax">Tax Rate</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/economy/asset/1028606/resale-data')" title="Limited item RAP">RAP Data</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/economy/asset/1028606/resellers')" title="Limited resellers">Resellers</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/thumbnails/users?userIds=1,2,3')" title="Batch user avatars">User Thumbs</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/thumbnails/groups?groupIds=1,2,3')" title="Batch group icons">Group Thumbs</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/thumbnails/assets?assetIds=1818,1028606')" title="Batch asset icons">Asset Thumbs</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('GET', '/proxy/localization/supported-languages')" title="Supported languages">Languages</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setApiTest('POST', '/proxy/users/username', '{&quot;usernames&quot;: [&quot;Builderman&quot;, &quot;Roblox&quot;]}')">Username Lookup</button>
                                 </div>
                             </div>
                             <div>

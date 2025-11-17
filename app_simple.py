@@ -1592,6 +1592,324 @@ def proxy_games_search():
     return jsonify(data), status
 
 
+# ===== MORE ADVANCED PROXY ENDPOINTS =====
+
+@app.route('/proxy/users/<user_id>/avatar')
+def proxy_user_avatar(user_id):
+    """Get user's current avatar assets"""
+    url = f"https://avatar.roblox.com/v1/users/{user_id}/avatar"
+    data, status = make_proxy_request(url, f'/proxy/users/{user_id}/avatar')
+    if status == 200:
+        proxy_cache[f"avatar_{user_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/outfits')
+def proxy_user_outfits(user_id):
+    """Get user's saved outfits"""
+    page = request.args.get('page', 1)
+    items_per_page = request.args.get('itemsPerPage', 25)
+    url = f"https://avatar.roblox.com/v1/users/{user_id}/outfits?page={page}&itemsPerPage={items_per_page}"
+    data, status = make_proxy_request(url, f'/proxy/users/{user_id}/outfits')
+    if status == 200:
+        proxy_cache[f"outfits_{user_id}_{page}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/followers')
+def proxy_user_followers(user_id):
+    """Get user's followers"""
+    limit = request.args.get('limit', 100)
+    cursor = request.args.get('cursor', '')
+    url = f"https://friends.roblox.com/v1/users/{user_id}/followers?limit={limit}"
+    if cursor:
+        url += f"&cursor={cursor}"
+    data, status = make_proxy_request(url, f'/proxy/users/{user_id}/followers')
+    if status == 200:
+        proxy_cache[f"followers_{user_id}_{cursor}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/followings')
+def proxy_user_followings(user_id):
+    """Get users that this user follows"""
+    limit = request.args.get('limit', 100)
+    cursor = request.args.get('cursor', '')
+    url = f"https://friends.roblox.com/v1/users/{user_id}/followings?limit={limit}"
+    if cursor:
+        url += f"&cursor={cursor}"
+    data, status = make_proxy_request(url, f'/proxy/users/{user_id}/followings')
+    if status == 200:
+        proxy_cache[f"followings_{user_id}_{cursor}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/friend-requests')
+def proxy_user_friend_requests(user_id):
+    """Get pending friend requests count"""
+    url = f"https://friends.roblox.com/v1/user/friend-requests/count"
+    data, status = make_proxy_request(url, f'/proxy/users/{user_id}/friend-requests')
+    return jsonify(data), status
+
+
+@app.route('/proxy/economy/resale-tax')
+def proxy_economy_resale_tax():
+    """Get current resale tax rate"""
+    url = "https://economy.roblox.com/v1/resale-tax-rate"
+    data, status = make_proxy_request(url, '/proxy/economy/resale-tax')
+    if status == 200:
+        proxy_cache['resale_tax'] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/economy/asset/<asset_id>/resellers')
+def proxy_asset_resellers(asset_id):
+    """Get limited item resellers"""
+    limit = request.args.get('limit', 10)
+    url = f"https://economy.roblox.com/v1/assets/{asset_id}/resellers?limit={limit}"
+    data, status = make_proxy_request(url, f'/proxy/economy/asset/{asset_id}/resellers')
+    if status == 200:
+        proxy_cache[f"resellers_{asset_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/economy/asset/<asset_id>/resale-data')
+def proxy_asset_resale_data(asset_id):
+    """Get limited item resale data (RAP, volume, etc)"""
+    url = f"https://economy.roblox.com/v1/assets/{asset_id}/resale-data"
+    data, status = make_proxy_request(url, f'/proxy/economy/asset/{asset_id}/resale-data')
+    if status == 200:
+        proxy_cache[f"resale_data_{asset_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/premium/users/<user_id>/validate')
+def proxy_premium_validate(user_id):
+    """Check if user has Premium"""
+    url = f"https://premiumfeatures.roblox.com/v1/users/{user_id}/validate-membership"
+    data, status = make_proxy_request(url, f'/proxy/premium/users/{user_id}/validate')
+    if status == 200:
+        proxy_cache[f"premium_{user_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/<universe_id>/votes')
+def proxy_game_votes(universe_id):
+    """Get game votes (likes/dislikes)"""
+    url = f"https://games.roblox.com/v1/games/votes?universeIds={universe_id}"
+    data, status = make_proxy_request(url, f'/proxy/games/{universe_id}/votes')
+    if status == 200:
+        proxy_cache[f"votes_{universe_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/<universe_id>/media')
+def proxy_game_media(universe_id):
+    """Get game media (screenshots, videos)"""
+    url = f"https://games.roblox.com/v2/games/{universe_id}/media"
+    data, status = make_proxy_request(url, f'/proxy/games/{universe_id}/media')
+    if status == 200:
+        proxy_cache[f"media_{universe_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/<universe_id>/social-links')
+def proxy_game_social_links(universe_id):
+    """Get game social links"""
+    url = f"https://games.roblox.com/v1/games/{universe_id}/social-links/list"
+    data, status = make_proxy_request(url, f'/proxy/games/{universe_id}/social-links')
+    if status == 200:
+        proxy_cache[f"social_{universe_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/<universe_id>/favorites/count')
+def proxy_game_favorites_count(universe_id):
+    """Get game favorite count"""
+    url = f"https://games.roblox.com/v1/games/{universe_id}/favorites/count"
+    data, status = make_proxy_request(url, f'/proxy/games/{universe_id}/favorites/count')
+    if status == 200:
+        proxy_cache[f"favcount_{universe_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/develop/games/<universe_id>/revenue')
+def proxy_game_revenue(universe_id):
+    """Get game revenue statistics"""
+    time_frame = request.args.get('timeFrame', 'Month')
+    url = f"https://develop.roblox.com/v1/universes/{universe_id}/revenue/summary?timeFrame={time_frame}"
+    data, status = make_proxy_request(url, f'/proxy/develop/games/{universe_id}/revenue')
+    if status == 200:
+        proxy_cache[f"revenue_{universe_id}_{time_frame}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/thumbnails/users')
+def proxy_thumbnails_users():
+    """Get batch user avatars"""
+    user_ids = request.args.get('userIds', '')
+    size = request.args.get('size', '420x420')
+    format_type = request.args.get('format', 'Png')
+    url = f"https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds={user_ids}&size={size}&format={format_type}"
+    data, status = make_proxy_request(url, '/proxy/thumbnails/users')
+    if status == 200:
+        proxy_cache[f"thumb_users_{user_ids}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/thumbnails/groups')
+def proxy_thumbnails_groups():
+    """Get batch group icons"""
+    group_ids = request.args.get('groupIds', '')
+    size = request.args.get('size', '420x420')
+    format_type = request.args.get('format', 'Png')
+    url = f"https://thumbnails.roblox.com/v1/groups/icons?groupIds={group_ids}&size={size}&format={format_type}"
+    data, status = make_proxy_request(url, '/proxy/thumbnails/groups')
+    if status == 200:
+        proxy_cache[f"thumb_groups_{group_ids}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/thumbnails/assets')
+def proxy_thumbnails_assets():
+    """Get batch asset thumbnails"""
+    asset_ids = request.args.get('assetIds', '')
+    size = request.args.get('size', '420x420')
+    format_type = request.args.get('format', 'Png')
+    url = f"https://thumbnails.roblox.com/v1/assets?assetIds={asset_ids}&size={size}&format={format_type}"
+    data, status = make_proxy_request(url, '/proxy/thumbnails/assets')
+    if status == 200:
+        proxy_cache[f"thumb_assets_{asset_ids}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/groups/<group_id>')
+def proxy_group_info(group_id):
+    """Get group information"""
+    url = f"https://groups.roblox.com/v1/groups/{group_id}"
+    data, status = make_proxy_request(url, f'/proxy/groups/{group_id}')
+    if status == 200:
+        proxy_cache[f"group_{group_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/groups/<group_id>/wall')
+def proxy_group_wall(group_id):
+    """Get group wall posts"""
+    limit = request.args.get('limit', 10)
+    sort_order = request.args.get('sortOrder', 'Desc')
+    cursor = request.args.get('cursor', '')
+    url = f"https://groups.roblox.com/v2/groups/{group_id}/wall/posts?limit={limit}&sortOrder={sort_order}"
+    if cursor:
+        url += f"&cursor={cursor}"
+    data, status = make_proxy_request(url, f'/proxy/groups/{group_id}/wall')
+    if status == 200:
+        proxy_cache[f"wall_{group_id}_{cursor}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/groups/<group_id>/social-links')
+def proxy_group_social_links(group_id):
+    """Get group social links"""
+    url = f"https://groups.roblox.com/v1/groups/{group_id}/social-links"
+    data, status = make_proxy_request(url, f'/proxy/groups/{group_id}/social-links')
+    if status == 200:
+        proxy_cache[f"group_social_{group_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/groups/<group_id>/audit-log')
+def proxy_group_audit_log(group_id):
+    """Get group audit log"""
+    action_type = request.args.get('actionType', '')
+    limit = request.args.get('limit', 10)
+    cursor = request.args.get('cursor', '')
+    url = f"https://groups.roblox.com/v1/groups/{group_id}/audit-log?limit={limit}"
+    if action_type:
+        url += f"&actionType={action_type}"
+    if cursor:
+        url += f"&cursor={cursor}"
+    data, status = make_proxy_request(url, f'/proxy/groups/{group_id}/audit-log')
+    if status == 200:
+        proxy_cache[f"audit_{group_id}_{cursor}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/localization/supported-languages')
+def proxy_supported_languages():
+    """Get Roblox supported languages"""
+    url = "https://locale.roblox.com/v1/locales/supported-locales"
+    data, status = make_proxy_request(url, '/proxy/localization/supported-languages')
+    if status == 200:
+        proxy_cache['supported_languages'] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/username-history')
+def proxy_username_history(user_id):
+    """Get user's username history"""
+    limit = request.args.get('limit', 10)
+    cursor = request.args.get('cursor', '')
+    url = f"https://users.roblox.com/v1/users/{user_id}/username-history?limit={limit}"
+    if cursor:
+        url += f"&cursor={cursor}"
+    data, status = make_proxy_request(url, f'/proxy/users/{user_id}/username-history')
+    if status == 200:
+        proxy_cache[f"username_history_{user_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/birthday')
+def proxy_user_birthday():
+    """Get user's birth date (current authenticated user)"""
+    url = "https://accountinformation.roblox.com/v1/birthdate"
+    data, status = make_proxy_request(url, '/proxy/birthday')
+    return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/status')
+def proxy_user_status(user_id):
+    """Get user's custom status"""
+    url = f"https://users.roblox.com/v1/users/{user_id}/status"
+    data, status = make_proxy_request(url, f'/proxy/users/{user_id}/status')
+    if status == 200:
+        proxy_cache[f"status_{user_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/sorts')
+def proxy_game_sorts():
+    """Get available game sorts"""
+    url = "https://games.roblox.com/v1/games/sorts"
+    data, status = make_proxy_request(url, '/proxy/games/sorts')
+    if status == 200:
+        proxy_cache['game_sorts'] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/list')
+def proxy_games_list():
+    """Get games by sort type"""
+    sort_token = request.args.get('sortToken', '')
+    start_rows = request.args.get('startRows', 0)
+    max_rows = request.args.get('maxRows', 10)
+    url = f"https://games.roblox.com/v1/games/list?sortToken={sort_token}&startRows={start_rows}&maxRows={max_rows}"
+    data, status = make_proxy_request(url, '/proxy/games/list')
+    if status == 200:
+        proxy_cache[f"games_list_{sort_token}_{start_rows}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
+@app.route('/proxy/games/<place_id>/details')
+def proxy_place_details(place_id):
+    """Get place details (not universe)"""
+    url = f"https://games.roblox.com/v1/games/multiget-place-details?placeIds={place_id}"
+    data, status = make_proxy_request(url, f'/proxy/games/{place_id}/details')
+    if status == 200:
+        proxy_cache[f"place_{place_id}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
 @app.route('/proxy/analytics/stats')
 def proxy_analytics_stats():
     """Get proxy stats"""

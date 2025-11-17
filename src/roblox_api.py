@@ -699,12 +699,18 @@ class OpenCloudAPI:
         return data
 
     def get_user_by_username(self, username: str) -> Dict:
-        """Get user by username"""
-        url = f"https://users.roblox.com/v1/users/search?keyword={username}&limit=10"
-        data, status = self._make_request("GET", url)
-        if status != 200:
-            raise Exception(f"Failed to search user: {data}")
-        return data
+        """Get user by username - exact match"""
+        url = "https://users.roblox.com/v1/usernames/users"
+        try:
+            # Use POST to get exact username match
+            import requests as req
+            response = req.post(url, json={"usernames": [username], "excludeBannedUsers": False}, timeout=10)
+            data = response.json()
+            if response.status_code == 200 and data.get('data') and len(data['data']) > 0:
+                return data['data'][0]  # Return first match
+        except:
+            pass
+        raise Exception(f"User '{username}' not found")
 
     # ===== GROUP INFO (Public API) =====
     def get_group_info(self, group_id: str) -> Dict:

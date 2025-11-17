@@ -1495,17 +1495,26 @@ async function lookupUser() {
     // Hide previous results
     document.getElementById('userInfoCard').style.display = 'none';
     document.getElementById('userGamesCard').style.display = 'none';
+    document.getElementById('userGroupGamesCard').style.display = 'none';
     document.getElementById('userGroupsCard').style.display = 'none';
 
     try {
         let userId = userInput;
 
-        // If not a number, search by username first (future enhancement)
-        // For now, assume it's a user ID
+        // If not a number, resolve username to ID first
         if (!userInput.match(/^\d+$/)) {
-            showToast('Please enter a numeric User ID', 'warning');
-            btn.classList.remove('loading');
-            return;
+            showToast('Resolving username...', 'info');
+            const resolveResponse = await fetch(`/api/user/resolve?username=${encodeURIComponent(userInput)}`);
+            const resolveData = await resolveResponse.json();
+
+            if (resolveData.error) {
+                showToast(`User not found: ${resolveData.error}`, 'error');
+                btn.classList.remove('loading');
+                return;
+            }
+
+            userId = resolveData.id;
+            showToast(`Found user: ${resolveData.displayName} (ID: ${userId})`, 'success');
         }
 
         // Get user info
@@ -1673,6 +1682,74 @@ async function lookupUser() {
                     </a>
                 </div>
             `).join('');
+
+            // Get group games (games the user has access to through their groups)
+            showToast('Loading group games...', 'info');
+            const groupGamesResponse = await fetch(`/api/user/group-games?user_id=${userId}`);
+            const groupGamesData = await groupGamesResponse.json();
+
+            const groupGamesCard = document.getElementById('userGroupGamesCard');
+            const groupGamesGrid = document.getElementById('userGroupGamesGrid');
+            const groupGamesCount = document.getElementById('userGroupGamesCount');
+            const noGroupGames = document.getElementById('userNoGroupGames');
+            groupGamesCard.style.display = 'block';
+
+            if (!groupGamesData.error && groupGamesData.games && groupGamesData.games.length > 0) {
+                groupGamesCount.textContent = groupGamesData.games.length;
+                noGroupGames.style.display = 'none';
+                groupGamesGrid.style.display = 'grid';
+
+                groupGamesGrid.innerHTML = groupGamesData.games.map(game => {
+                    const likeRatio = game.upvotes + game.downvotes > 0
+                        ? Math.round((game.upvotes / (game.upvotes + game.downvotes)) * 100)
+                        : 0;
+
+                    return `
+                        <div style="background: var(--bg-tertiary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)';" onmouseout="this.style.transform='';this.style.boxShadow='';">
+                            <div style="position: relative;">
+                                <img src="${game.thumbnail || ''}" alt="${escapeHtml(game.name)}" style="width: 100%; height: 180px; object-fit: cover; background: var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22512%22 height=%22512%22><rect fill=%22%23222%22 width=%22512%22 height=%22512%22/><text x=%22256%22 y=%22256%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2248%22>No Image</text></svg>'">
+                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(124, 58, 237, 0.9); padding: 4px 8px; border-radius: 6px; font-size: 10px; color: white; font-weight: 600;">
+                                    <i class="fas fa-building"></i> ${escapeHtml(game.groupName || 'Group')}
+                                </div>
+                                <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 6px; font-size: 11px;">
+                                    <span style="color: ${likeRatio >= 70 ? 'var(--success)' : likeRatio >= 50 ? 'var(--warning)' : 'var(--danger)'};">
+                                        <i class="fas fa-thumbs-up"></i> ${likeRatio}%
+                                    </span>
+                                </div>
+                                ${game.playing > 0 ? `
+                                    <div style="position: absolute; bottom: 8px; left: 8px; background: var(--success); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: 600;">
+                                        <i class="fas fa-circle" style="font-size: 8px;"></i> ${formatLargeNumber(game.playing)} Playing
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div style="padding: 16px;">
+                                <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text-primary);">${escapeHtml(game.name)}</h4>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: 12px;">
+                                    <div style="color: var(--text-secondary);">
+                                        <i class="fas fa-eye" style="color: var(--info);"></i> ${formatLargeNumber(game.visits)} visits
+                                    </div>
+                                    <div style="color: var(--text-secondary);">
+                                        <i class="fas fa-star" style="color: var(--warning);"></i> ${formatLargeNumber(game.favorites)} favs
+                                    </div>
+                                    <div style="color: var(--text-secondary);">
+                                        <i class="fas fa-thumbs-up" style="color: var(--success);"></i> ${formatLargeNumber(game.upvotes)}
+                                    </div>
+                                    <div style="color: var(--text-secondary);">
+                                        <i class="fas fa-thumbs-down" style="color: var(--danger);"></i> ${formatLargeNumber(game.downvotes)}
+                                    </div>
+                                </div>
+                                <a href="https://www.roblox.com/games/${game.rootPlaceId || game.id}" target="_blank" style="display: block; background: linear-gradient(135deg, #00b06f, #00d47e); color: white; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                    <i class="fas fa-play"></i> PLAY
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                groupGamesCount.textContent = '0';
+                groupGamesGrid.style.display = 'none';
+                noGroupGames.style.display = 'block';
+            }
         } else {
             groupsCount.textContent = '0';
             groupsGrid.style.display = 'none';

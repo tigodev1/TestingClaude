@@ -196,10 +196,6 @@
 
                 <div style="padding: 12px 16px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-primary); font-weight: 600;">Open Cloud</div>
 
-                <div class="nav-item" data-page="gameinfo">
-                    <i class="fas fa-gamepad"></i>
-                    <span>Game Info</span>
-                </div>
                 <div class="nav-item" data-page="userlookup">
                     <i class="fas fa-user-circle"></i>
                     <span>User Lookup</span>
@@ -644,26 +640,6 @@
                 </div>
             </div>
 
-            <!-- Game Info Page -->
-            <div id="page-gameinfo" class="page">
-                <h2 style="margin-bottom: 24px;">Game Information</h2>
-
-                <div id="gameInfoContent">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Current Universe Stats</h3>
-                            <button class="btn btn-primary" onclick="loadGameInfo()">
-                                <i class="fas fa-sync"></i> Load Stats
-                            </button>
-                        </div>
-                        <div id="gameInfoDisplay" style="text-align: center; padding: 40px;">
-                            <i class="fas fa-gamepad" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 16px;"></i>
-                            <p style="color: var(--text-secondary);">Click "Load Stats" to fetch game information</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- User Lookup Page - Advanced -->
             <div id="page-userlookup" class="page">
                 <h2 style="margin-bottom: 24px;">User Lookup</h2>
@@ -675,7 +651,7 @@
                     <div style="display: flex; gap: 12px; align-items: flex-end;">
                         <div class="form-group" style="flex: 1; margin: 0;">
                             <label class="form-label">User ID or Username</label>
-                            <input type="text" class="form-input" id="userIdInput" placeholder="e.g., 1234567 or Roblox" onkeypress="if(event.key==='Enter')lookupUser()">
+                            <input type="text" class="form-input" id="userIdInput" placeholder="e.g., 1234567 or Builderman" onkeypress="if(event.key==='Enter')lookupUser()">
                         </div>
                         <button class="btn btn-primary" onclick="lookupUser()" id="userLookupBtn">
                             <i class="fas fa-search"></i> Lookup
@@ -695,12 +671,23 @@
 
                 <div id="userGamesCard" class="card" style="display: none;">
                     <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-gamepad"></i> Created Games (<span id="userGamesCount">0</span>)</h3>
+                        <h3 class="card-title"><i class="fas fa-code"></i> Created Games (<span id="userGamesCount">0</span>)</h3>
                     </div>
                     <div id="userGamesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;"></div>
                     <div id="userNoGames" style="display: none; text-align: center; padding: 40px; color: var(--text-secondary);">
                         <i class="fas fa-gamepad" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
                         <p>This user hasn't created any games yet</p>
+                    </div>
+                </div>
+
+                <div id="userGroupGamesCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-building"></i> Group Games Access (<span id="userGroupGamesCount">0</span>)</h3>
+                    </div>
+                    <div id="userGroupGamesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;"></div>
+                    <div id="userNoGroupGames" style="display: none; text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-building" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>No group games found</p>
                     </div>
                 </div>
 

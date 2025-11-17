@@ -865,6 +865,27 @@ def get_universe_info():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/user/resolve')
+def resolve_user():
+    """Resolve username to user ID"""
+    if not cloud_api:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        username = request.args.get('username', '')
+        if not username:
+            return jsonify({'error': 'Username required'}), 400
+
+        user_data = cloud_api.get_user_by_username(username)
+        return jsonify({
+            'id': user_data.get('id'),
+            'name': user_data.get('name'),
+            'displayName': user_data.get('displayName')
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/user/info')
 def get_user_info():
     """Get user information with enhanced stats"""
@@ -978,6 +999,73 @@ def get_user_groups():
             })
 
         return jsonify({'groups': groups, 'count': len(groups)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/group-games')
+def get_user_group_games():
+    """Get all games from groups the user has access to"""
+    if not cloud_api:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        user_id = request.args.get('user_id', '')
+        if not user_id:
+            return jsonify({'error': 'User ID required'}), 400
+
+        # First get user's groups
+        groups_data = cloud_api.get_user_groups(user_id)
+        all_games = []
+        seen_ids = set()
+
+        for group_entry in groups_data.get('data', []):
+            group = group_entry.get('group', {})
+            group_id = str(group.get('id', ''))
+            group_name = group.get('name', 'Unknown Group')
+
+            if not group_id:
+                continue
+
+            # Get games for this group
+            try:
+                games_data = cloud_api.get_group_games(group_id)
+                for game in games_data.get('data', []):
+                    game_id = game.get('id')
+                    if game_id and game_id not in seen_ids:
+                        seen_ids.add(game_id)
+                        universe_id = str(game_id)
+                        thumbnail = cloud_api.get_universe_thumbnail(universe_id)
+                        place_id = cloud_api.get_place_from_universe(universe_id)
+
+                        # Get stats
+                        game_stats = {}
+                        votes = {}
+                        stats_data = cloud_api.get_universe_visits(universe_id)
+                        if stats_data.get('data') and len(stats_data['data']) > 0:
+                            game_stats = stats_data['data'][0]
+                        votes_data = cloud_api.get_universe_votes(universe_id)
+                        if votes_data.get('data') and len(votes_data['data']) > 0:
+                            votes = votes_data['data'][0]
+
+                        all_games.append({
+                            'id': game_id,
+                            'rootPlaceId': place_id or game.get('rootPlaceId', ''),
+                            'name': game.get('name'),
+                            'description': game.get('description', ''),
+                            'visits': game_stats.get('visits', game.get('placeVisits', 0)),
+                            'playing': game_stats.get('playing', 0),
+                            'favorites': game_stats.get('favoritedCount', 0),
+                            'upvotes': votes.get('upVotes', 0),
+                            'downvotes': votes.get('downVotes', 0),
+                            'thumbnail': thumbnail,
+                            'groupName': group_name,
+                            'groupId': group_id
+                        })
+            except:
+                continue  # Skip groups we can't fetch games for
+
+        return jsonify({'games': all_games, 'count': len(all_games)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

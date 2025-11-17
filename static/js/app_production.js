@@ -1480,137 +1480,220 @@ async function loadGameInfo() {
     }
 }
 
-// User Lookup
+// User Lookup - Advanced
 async function lookupUser() {
-    const userId = document.getElementById('userIdInput').value.trim();
-    if (!userId) {
-        showToast('Please enter a User ID', 'error');
+    const userInput = document.getElementById('userIdInput').value.trim();
+    if (!userInput) {
+        showToast('Please enter a User ID or Username', 'error');
         return;
     }
 
+    const btn = document.getElementById('userLookupBtn');
+    btn.classList.add('loading');
     showToast('Looking up user...', 'info');
 
+    // Hide previous results
+    document.getElementById('userInfoCard').style.display = 'none';
+    document.getElementById('userGamesCard').style.display = 'none';
+    document.getElementById('userGroupsCard').style.display = 'none';
+
     try {
+        let userId = userInput;
+
+        // If not a number, search by username first (future enhancement)
+        // For now, assume it's a user ID
+        if (!userInput.match(/^\d+$/)) {
+            showToast('Please enter a numeric User ID', 'warning');
+            btn.classList.remove('loading');
+            return;
+        }
+
         // Get user info
         const userResponse = await fetch(`/api/user/info?user_id=${userId}`);
         const userData = await userResponse.json();
 
         if (userData.error) {
             showToast(`Error: ${userData.error}`, 'error');
+            btn.classList.remove('loading');
             return;
         }
 
-        // Display user info
+        // Display user info card
         const userCard = document.getElementById('userInfoCard');
         const userDisplay = document.getElementById('userInfoDisplay');
         userCard.style.display = 'block';
 
+        // Update profile link
+        document.getElementById('userProfileLink').href = `https://www.roblox.com/users/${userData.id}/profile`;
+
+        const accountAge = Math.floor((Date.now() - new Date(userData.created).getTime()) / (1000 * 60 * 60 * 24));
+        const accountYears = (accountAge / 365).toFixed(1);
+
         userDisplay.innerHTML = `
-            <div style="display: flex; gap: 24px; align-items: center; padding: 16px;">
-                <img src="${userData.thumbnail || ''}" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; background: var(--bg-card);" onerror="this.style.display='none'">
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 24px; padding: 20px;">
+                <div style="text-align: center;">
+                    <img src="${userData.thumbnail || ''}" alt="Avatar" style="width: 150px; height: 150px; border-radius: 12px; background: var(--bg-tertiary); box-shadow: 0 4px 12px rgba(0,0,0,0.3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22><rect fill=%22%23333%22 width=%22150%22 height=%22150%22/></svg>'">
+                    ${userData.isBanned ? '<div style="margin-top: 8px;"><span class="badge badge-danger" style="font-size: 14px;"><i class="fas fa-ban"></i> BANNED</span></div>' : ''}
+                </div>
                 <div>
-                    <h3 style="margin: 0 0 4px 0;">${escapeHtml(userData.displayName)}</h3>
-                    <p style="color: var(--text-secondary); margin: 0 0 8px 0;">@${escapeHtml(userData.name)}</p>
-                    <p style="margin: 0; font-size: 14px;">${escapeHtml(userData.description || 'No description').substring(0, 150)}</p>
-                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 12px;">
-                        User ID: ${userData.id} | Joined: ${new Date(userData.created).toLocaleDateString()}
-                        ${userData.isBanned ? '<span style="color: var(--danger);"> | BANNED</span>' : ''}
+                    <div style="margin-bottom: 16px;">
+                        <h2 style="margin: 0 0 4px 0; font-size: 28px; font-weight: 700;">${escapeHtml(userData.displayName)}</h2>
+                        <p style="color: var(--text-secondary); margin: 0; font-size: 16px;">@${escapeHtml(userData.name)}</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                        <div class="stat-card" style="padding: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 20px; color: var(--accent-primary);">${formatLargeNumber(userData.friends || 0)}</div>
+                            <div class="stat-label" style="font-size: 11px;"><i class="fas fa-user-friends"></i> Friends</div>
+                        </div>
+                        <div class="stat-card" style="padding: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 20px; color: var(--success);">${formatLargeNumber(userData.followers || 0)}</div>
+                            <div class="stat-label" style="font-size: 11px;"><i class="fas fa-heart"></i> Followers</div>
+                        </div>
+                        <div class="stat-card" style="padding: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 20px; color: var(--warning);">${accountYears}</div>
+                            <div class="stat-label" style="font-size: 11px;"><i class="fas fa-clock"></i> Years</div>
+                        </div>
+                        <div class="stat-card" style="padding: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 14px; color: var(--info);">${userData.id}</div>
+                            <div class="stat-label" style="font-size: 11px;"><i class="fas fa-id-badge"></i> User ID</div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+                            ${escapeHtml(userData.description || 'No description provided').substring(0, 300)}${(userData.description || '').length > 300 ? '...' : ''}
+                        </p>
+                    </div>
+
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 12px;">
+                        <i class="fas fa-calendar"></i> Joined: ${new Date(userData.created).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        <span style="margin: 0 8px;">|</span>
+                        <i class="fas fa-clock"></i> Account Age: ${accountAge} days
                     </p>
                 </div>
             </div>
         `;
 
         // Get user's games
+        showToast('Loading user games...', 'info');
         const gamesResponse = await fetch(`/api/user/games?user_id=${userId}`);
         const gamesData = await gamesResponse.json();
 
-        if (!gamesData.error && gamesData.games.length > 0) {
-            const gamesCard = document.getElementById('userGamesCard');
-            const gamesGrid = document.getElementById('userGamesGrid');
-            gamesCard.style.display = 'block';
+        const gamesCard = document.getElementById('userGamesCard');
+        const gamesGrid = document.getElementById('userGamesGrid');
+        const gamesCount = document.getElementById('userGamesCount');
+        const noGames = document.getElementById('userNoGames');
+        gamesCard.style.display = 'block';
 
-            gamesGrid.innerHTML = gamesData.games.map(game => `
-                <div class="card" style="margin: 0;">
-                    <img src="${game.thumbnail || ''}" alt="${escapeHtml(game.name)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background: var(--bg-card);" onerror="this.style.display='none'">
-                    <h4 style="margin: 0 0 8px 0;">${escapeHtml(game.name)}</h4>
-                    <p style="color: var(--text-secondary); font-size: 12px; margin: 0;">
-                        <i class="fas fa-eye"></i> ${formatLargeNumber(game.visits)} visits
-                    </p>
-                </div>
-            `).join('');
+        if (!gamesData.error && gamesData.games && gamesData.games.length > 0) {
+            gamesCount.textContent = gamesData.games.length;
+            noGames.style.display = 'none';
+            gamesGrid.style.display = 'grid';
+
+            gamesGrid.innerHTML = gamesData.games.map(game => {
+                const likeRatio = game.upvotes + game.downvotes > 0
+                    ? Math.round((game.upvotes / (game.upvotes + game.downvotes)) * 100)
+                    : 0;
+
+                return `
+                    <div style="background: var(--bg-tertiary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)';" onmouseout="this.style.transform='';this.style.boxShadow='';">
+                        <div style="position: relative;">
+                            <img src="${game.thumbnail || ''}" alt="${escapeHtml(game.name)}" style="width: 100%; height: 180px; object-fit: cover; background: var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22512%22 height=%22512%22><rect fill=%22%23222%22 width=%22512%22 height=%22512%22/><text x=%22256%22 y=%22256%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2248%22>No Image</text></svg>'">
+                            <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 6px; font-size: 11px;">
+                                <span style="color: ${likeRatio >= 70 ? 'var(--success)' : likeRatio >= 50 ? 'var(--warning)' : 'var(--danger)'};">
+                                    <i class="fas fa-thumbs-up"></i> ${likeRatio}%
+                                </span>
+                            </div>
+                            ${game.playing > 0 ? `
+                                <div style="position: absolute; bottom: 8px; left: 8px; background: var(--success); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: 600;">
+                                    <i class="fas fa-circle" style="font-size: 8px;"></i> ${formatLargeNumber(game.playing)} Playing
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div style="padding: 16px;">
+                            <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text-primary);">${escapeHtml(game.name)}</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: 12px;">
+                                <div style="color: var(--text-secondary);">
+                                    <i class="fas fa-eye" style="color: var(--info);"></i> ${formatLargeNumber(game.visits)} visits
+                                </div>
+                                <div style="color: var(--text-secondary);">
+                                    <i class="fas fa-star" style="color: var(--warning);"></i> ${formatLargeNumber(game.favorites)} favs
+                                </div>
+                                <div style="color: var(--text-secondary);">
+                                    <i class="fas fa-thumbs-up" style="color: var(--success);"></i> ${formatLargeNumber(game.upvotes)}
+                                </div>
+                                <div style="color: var(--text-secondary);">
+                                    <i class="fas fa-thumbs-down" style="color: var(--danger);"></i> ${formatLargeNumber(game.downvotes)}
+                                </div>
+                            </div>
+                            <a href="https://www.roblox.com/games/${game.rootPlaceId || game.id}" target="_blank" style="display: block; background: linear-gradient(135deg, #00b06f, #00d47e); color: white; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                <i class="fas fa-play"></i> PLAY
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            gamesCount.textContent = '0';
+            gamesGrid.style.display = 'none';
+            noGames.style.display = 'block';
         }
 
-        showToast('User found!', 'success');
+        // Get user's groups
+        showToast('Loading user groups...', 'info');
+        const groupsResponse = await fetch(`/api/user/groups?user_id=${userId}`);
+        const groupsData = await groupsResponse.json();
+
+        const groupsCard = document.getElementById('userGroupsCard');
+        const groupsGrid = document.getElementById('userGroupsGrid');
+        const groupsCount = document.getElementById('userGroupsCount');
+        const noGroups = document.getElementById('userNoGroups');
+        groupsCard.style.display = 'block';
+
+        if (!groupsData.error && groupsData.groups && groupsData.groups.length > 0) {
+            groupsCount.textContent = groupsData.groups.length;
+            noGroups.style.display = 'none';
+            groupsGrid.style.display = 'grid';
+
+            groupsGrid.innerHTML = groupsData.groups.map(group => `
+                <div style="background: var(--bg-tertiary); border-radius: 10px; padding: 16px; border: 1px solid var(--border); display: flex; gap: 12px; align-items: center; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background='var(--bg-tertiary)'">
+                    <img src="${group.thumbnail || ''}" alt="${escapeHtml(group.name)}" style="width: 64px; height: 64px; border-radius: 8px; background: var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22><rect fill=%22%23333%22 width=%2264%22 height=%2264%22/></svg>'">
+                    <div style="flex: 1; min-width: 0;">
+                        <h5 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(group.name)}</h5>
+                        <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--text-secondary);">
+                            <i class="fas fa-users"></i> ${formatLargeNumber(group.memberCount)} members
+                        </p>
+                        <div style="display: inline-block; background: ${getRoleColor(group.roleRank)}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+                            ${escapeHtml(group.role)}
+                        </div>
+                    </div>
+                    <a href="https://www.roblox.com/groups/${group.id}" target="_blank" style="color: var(--accent-primary); text-decoration: none;">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+            `).join('');
+        } else {
+            groupsCount.textContent = '0';
+            groupsGrid.style.display = 'none';
+            noGroups.style.display = 'block';
+        }
+
+        showToast('User lookup complete!', 'success');
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
+    } finally {
+        btn.classList.remove('loading');
     }
 }
 
-// Group Lookup
-async function lookupGroup() {
-    const groupId = document.getElementById('groupIdInput').value.trim();
-    if (!groupId) {
-        showToast('Please enter a Group ID', 'error');
-        return;
-    }
-
-    showToast('Looking up group...', 'info');
-
-    try {
-        // Get group info
-        const groupResponse = await fetch(`/api/group/info?group_id=${groupId}`);
-        const groupData = await groupResponse.json();
-
-        if (groupData.error) {
-            showToast(`Error: ${groupData.error}`, 'error');
-            return;
-        }
-
-        // Display group info
-        const groupCard = document.getElementById('groupInfoCard');
-        const groupDisplay = document.getElementById('groupInfoDisplay');
-        groupCard.style.display = 'block';
-
-        groupDisplay.innerHTML = `
-            <div style="display: flex; gap: 24px; align-items: center; padding: 16px;">
-                <img src="${groupData.thumbnail || ''}" alt="Group Icon" style="width: 100px; height: 100px; border-radius: 12px; background: var(--bg-card);" onerror="this.style.display='none'">
-                <div>
-                    <h3 style="margin: 0 0 4px 0;">${escapeHtml(groupData.name)}</h3>
-                    <p style="color: var(--text-secondary); margin: 0 0 8px 0;">
-                        <i class="fas fa-users"></i> ${formatLargeNumber(groupData.memberCount)} members
-                    </p>
-                    <p style="margin: 0; font-size: 14px;">${escapeHtml(groupData.description || 'No description').substring(0, 150)}</p>
-                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 12px;">
-                        Group ID: ${groupData.id} | Owner: ${groupData.owner?.username || 'Unknown'}
-                    </p>
-                </div>
-            </div>
-        `;
-
-        // Get group's games
-        const gamesResponse = await fetch(`/api/group/games?group_id=${groupId}`);
-        const gamesData = await gamesResponse.json();
-
-        if (!gamesData.error && gamesData.games.length > 0) {
-            const gamesCard = document.getElementById('groupGamesCard');
-            const gamesGrid = document.getElementById('groupGamesGrid');
-            gamesCard.style.display = 'block';
-
-            gamesGrid.innerHTML = gamesData.games.map(game => `
-                <div class="card" style="margin: 0;">
-                    <img src="${game.thumbnail || ''}" alt="${escapeHtml(game.name)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background: var(--bg-card);" onerror="this.style.display='none'">
-                    <h4 style="margin: 0 0 8px 0;">${escapeHtml(game.name)}</h4>
-                    <p style="color: var(--text-secondary); font-size: 12px; margin: 0;">
-                        <i class="fas fa-eye"></i> ${formatLargeNumber(game.visits)} visits
-                    </p>
-                </div>
-            `).join('');
-        }
-
-        showToast('Group found!', 'success');
-    } catch (error) {
-        showToast(`Error: ${error.message}`, 'error');
-    }
+// Helper function for role colors
+function getRoleColor(rank) {
+    if (rank >= 250) return 'var(--danger)'; // Owner-level
+    if (rank >= 200) return 'var(--warning)'; // Admin-level
+    if (rank >= 100) return 'var(--info)'; // Moderator-level
+    if (rank > 1) return 'var(--success)'; // Member+
+    return 'var(--text-secondary)'; // Guest/Member
 }
 
 // Helper function for large numbers

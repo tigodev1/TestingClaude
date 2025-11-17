@@ -747,3 +747,56 @@ class OpenCloudAPI:
         if status != 200:
             raise Exception(f"Failed to get user games: {data}")
         return data
+
+    def get_user_groups(self, user_id: str) -> Dict:
+        """Get groups user is a member of"""
+        url = f"https://groups.roblox.com/v1/users/{user_id}/groups/roles"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            raise Exception(f"Failed to get user groups: {data}")
+        return data
+
+    def get_user_friends_count(self, user_id: str) -> int:
+        """Get user's friend count"""
+        url = f"https://friends.roblox.com/v1/users/{user_id}/friends/count"
+        try:
+            data, status = self._make_request("GET", url)
+            if status == 200:
+                return data.get('count', 0)
+        except:
+            pass
+        return 0
+
+    def get_user_followers_count(self, user_id: str) -> int:
+        """Get user's followers count"""
+        url = f"https://friends.roblox.com/v1/users/{user_id}/followers/count"
+        try:
+            data, status = self._make_request("GET", url)
+            if status == 200:
+                return data.get('count', 0)
+        except:
+            pass
+        return 0
+
+    def get_game_thumbnail(self, universe_id: str) -> str:
+        """Get game thumbnail by universe ID"""
+        url = f"https://thumbnails.roblox.com/v1/games/icons?universeIds={universe_id}&size=512x512&format=Png&isCircular=false"
+        try:
+            response = requests.get(url, timeout=10)
+            data = response.json()
+            if data.get('data') and len(data['data']) > 0:
+                return data['data'][0].get('imageUrl', '')
+        except:
+            pass
+        return ''
+
+    def get_place_from_universe(self, universe_id: str) -> str:
+        """Get root place ID from universe ID"""
+        url = f"https://games.roblox.com/v1/games?universeIds={universe_id}"
+        try:
+            data, status = self._make_request("GET", url)
+            if status == 200 and data.get('data'):
+                return str(data['data'][0].get('rootPlaceId', ''))
+        except:
+            pass
+        return ''

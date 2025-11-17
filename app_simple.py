@@ -867,7 +867,7 @@ def get_universe_info():
 
 @app.route('/api/user/info')
 def get_user_info():
-    """Get user information"""
+    """Get user information with enhanced stats"""
     if not cloud_api:
         return jsonify({'error': 'API not configured'}), 400
 
@@ -878,6 +878,8 @@ def get_user_info():
 
         user_data = cloud_api.get_user_info(user_id)
         thumbnail = cloud_api.get_user_thumbnail(user_id)
+        friends_count = cloud_api.get_user_friends_count(user_id)
+        followers_count = cloud_api.get_user_followers_count(user_id)
 
         return jsonify({
             'id': user_data.get('id'),
@@ -886,7 +888,9 @@ def get_user_info():
             'description': user_data.get('description', ''),
             'created': user_data.get('created'),
             'isBanned': user_data.get('isBanned', False),
-            'thumbnail': thumbnail
+            'thumbnail': thumbnail,
+            'friends': friends_count,
+            'followers': followers_count
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -894,7 +898,7 @@ def get_user_info():
 
 @app.route('/api/user/games')
 def get_user_games():
-    """Get games created by user"""
+    """Get games created by user with enhanced data"""
     if not cloud_api:
         return jsonify({'error': 'API not configured'}), 400
 
@@ -909,18 +913,71 @@ def get_user_games():
         for game in games_data.get('data', []):
             universe_id = str(game.get('id', ''))
             thumbnail = cloud_api.get_universe_thumbnail(universe_id) if universe_id else ''
+            place_id = cloud_api.get_place_from_universe(universe_id) if universe_id else ''
+
+            # Get more game stats
+            game_stats = {}
+            votes = {}
+            if universe_id:
+                stats_data = cloud_api.get_universe_visits(universe_id)
+                if stats_data.get('data') and len(stats_data['data']) > 0:
+                    game_stats = stats_data['data'][0]
+
+                votes_data = cloud_api.get_universe_votes(universe_id)
+                if votes_data.get('data') and len(votes_data['data']) > 0:
+                    votes = votes_data['data'][0]
 
             games.append({
                 'id': game.get('id'),
+                'rootPlaceId': place_id or game.get('rootPlaceId', ''),
                 'name': game.get('name'),
                 'description': game.get('description', ''),
-                'visits': game.get('placeVisits', 0),
+                'visits': game_stats.get('visits', game.get('placeVisits', 0)),
+                'playing': game_stats.get('playing', 0),
+                'favorites': game_stats.get('favoritedCount', 0),
+                'upvotes': votes.get('upVotes', 0),
+                'downvotes': votes.get('downVotes', 0),
                 'created': game.get('created'),
                 'updated': game.get('updated'),
                 'thumbnail': thumbnail
             })
 
         return jsonify({'games': games, 'count': len(games)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/groups')
+def get_user_groups():
+    """Get groups user is a member of"""
+    if not cloud_api:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        user_id = request.args.get('user_id', '')
+        if not user_id:
+            return jsonify({'error': 'User ID required'}), 400
+
+        groups_data = cloud_api.get_user_groups(user_id)
+        groups = []
+
+        for group_entry in groups_data.get('data', []):
+            group = group_entry.get('group', {})
+            role = group_entry.get('role', {})
+            group_id = str(group.get('id', ''))
+            thumbnail = cloud_api.get_group_thumbnail(group_id) if group_id else ''
+
+            groups.append({
+                'id': group.get('id'),
+                'name': group.get('name'),
+                'description': group.get('description', ''),
+                'memberCount': group.get('memberCount', 0),
+                'role': role.get('name', 'Member'),
+                'roleRank': role.get('rank', 0),
+                'thumbnail': thumbnail
+            })
+
+        return jsonify({'groups': groups, 'count': len(groups)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

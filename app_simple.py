@@ -2008,17 +2008,6 @@ def proxy_user_status(user_id):
     return jsonify(data), status
 
 
-@app.route('/proxy/users/<user_id>/presence')
-def proxy_user_presence(user_id):
-    """Get user's presence (online status)"""
-    try:
-        url = 'https://presence.roblox.com/v1/presence/users'
-        response = requests.post(url, json={'userIds': [int(user_id)]}, timeout=30)
-        return jsonify(response.json()), response.status_code
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
 @app.route('/proxy/games/sorts')
 def proxy_game_sorts():
     """Get available game sorts"""

@@ -1,5 +1,5 @@
 /**
- * Roblox DataStore Manager - Production App
+ * Tigos API Playground - Production App
  * Clean, polished version
  */
 
@@ -11,9 +11,39 @@ let selectedEntries = new Set();
 let isConnected = false;
 let lastKnownRateLimit = 300;
 
+// ===== THEME MANAGEMENT =====
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('tigos-theme', theme);
+
+    // Update theme buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-theme') === theme) {
+            btn.classList.add('active');
+        }
+    });
+
+    showToast(`Theme changed to ${theme}`, 'info');
+}
+
+function loadSavedTheme() {
+    const savedTheme = localStorage.getItem('tigos-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // Update theme buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-theme') === savedTheme) {
+            btn.classList.add('active');
+        }
+    });
+}
+
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DataStore Manager loaded');
+    console.log('Tigos API Playground loaded');
+    loadSavedTheme();
     initNavigation();
     initTabs();
     loadLocalStats(); // Only load local stats, not API

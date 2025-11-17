@@ -82,22 +82,22 @@ class RobloxDataStoreAPI:
 
             try:
                 if method == "GET":
-                    response = self.session.get(url, params=params, headers=req_headers, timeout=30)
+                    response = self.session.get(url, params=params, headers=req_headers, timeout=60)
                 elif method == "POST":
                     if data is not None:
                         json_data = json.dumps(data, separators=(',', ':'))
                         req_headers["content-md5"] = self._calculate_md5(data)
-                        response = self.session.post(url, params=params, data=json_data, headers=req_headers, timeout=30)
+                        response = self.session.post(url, params=params, data=json_data, headers=req_headers, timeout=60)
                     else:
-                        response = self.session.post(url, params=params, headers=req_headers, timeout=30)
+                        response = self.session.post(url, params=params, headers=req_headers, timeout=60)
                 elif method == "DELETE":
-                    response = self.session.delete(url, params=params, headers=req_headers, timeout=30)
+                    response = self.session.delete(url, params=params, headers=req_headers, timeout=60)
                 elif method == "PATCH":
                     if data is not None:
                         json_data = json.dumps(data, separators=(',', ':'))
-                        response = self.session.patch(url, params=params, data=json_data, headers=req_headers, timeout=30)
+                        response = self.session.patch(url, params=params, data=json_data, headers=req_headers, timeout=60)
                     else:
-                        response = self.session.patch(url, params=params, headers=req_headers, timeout=30)
+                        response = self.session.patch(url, params=params, headers=req_headers, timeout=60)
                 else:
                     raise ValueError(f"Unsupported HTTP method: {method}")
 

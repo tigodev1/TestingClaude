@@ -228,7 +228,7 @@
                     <span>API Tester</span>
                 </div>
                 <div class="nav-item" data-page="userlookup">
-                    <i class="fas fa-user-magnifying-glass"></i>
+                    <i class="fas fa-id-card"></i>
                     <span>User Lookup</span>
                 </div>
                 <div class="nav-item" data-page="analytics">
@@ -250,6 +250,21 @@
                     <span>Settings</span>
                 </div>
             </nav>
+
+            <!-- Theme Toggle -->
+            <div style="padding: 12px 16px; border-top: 1px solid var(--border);">
+                <div style="display: flex; gap: 6px;">
+                    <button class="theme-btn active" onclick="setTheme('dark')" data-theme="dark" title="Dark Theme" style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); cursor: pointer; color: var(--text-primary); font-size: 12px;">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="theme-btn" onclick="setTheme('light')" data-theme="light" title="Light Theme" style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); cursor: pointer; color: var(--text-primary); font-size: 12px;">
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <button class="theme-btn" onclick="setTheme('midnight')" data-theme="midnight" title="Midnight Theme" style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); cursor: pointer; color: var(--text-primary); font-size: 12px;">
+                        <i class="fas fa-star"></i>
+                    </button>
+                </div>
+            </div>
 
             <!-- Connection Status -->
             <div style="padding: 16px; border-top: 1px solid var(--border); margin-top: auto;">
@@ -611,40 +626,49 @@
 
             <!-- Ordered DataStores Page -->
             <div id="page-ordered" class="page">
-                <h2 style="margin-bottom: 24px;">Ordered DataStores</h2>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Ordered DataStore Explorer</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            <i class="fas fa-list-ol" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            Ordered DataStores
+                        </h2>
+                        <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 14px;">Leaderboards and rankings with automatic sorting by score</p>
                     </div>
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
-                        Ordered DataStores store numeric values sorted by score. Useful for leaderboards, rankings, and sorted data.
+                </div>
+
+                <div class="card" style="border: 1px solid rgba(67,233,123,0.2);">
+                    <div class="card-header" style="background: linear-gradient(135deg, rgba(67,233,123,0.05) 0%, rgba(56,249,215,0.05) 100%);">
+                        <h3 class="card-title"><i class="fas fa-trophy" style="color: #43e97b;"></i> Leaderboard Explorer</h3>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
+                        Ordered DataStores automatically sort entries by score. Perfect for leaderboards, rankings, and high scores.
+                        <br><strong style="color: #43e97b;">Default: Highest to Lowest (Descending)</strong> - Check the box below for lowest to highest.
                     </p>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                         <div class="form-group">
                             <label class="form-label">DataStore Name</label>
-                            <input type="text" class="form-input" id="orderedDatastore" placeholder="e.g., Leaderboard">
+                            <input type="text" class="form-input" id="orderedDatastore" placeholder="e.g., Leaderboard" style="border: 2px solid rgba(67,233,123,0.3);">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Scope</label>
-                            <input type="text" class="form-input" id="orderedScope" value="global">
+                            <input type="text" class="form-input" id="orderedScope" value="global" style="border: 2px solid rgba(67,233,123,0.3);">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Limit</label>
-                            <input type="number" class="form-input" id="orderedLimit" value="100" min="1" max="100">
+                            <label class="form-label">Top Results</label>
+                            <input type="number" class="form-input" id="orderedLimit" value="100" min="1" max="100" style="border: 2px solid rgba(67,233,123,0.3);">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Sort Order</label>
                             <div class="checkbox-wrapper" style="margin-top: 8px;">
                                 <input type="checkbox" id="orderedAscending">
-                                <label>Ascending (Low to High)</label>
+                                <label style="color: var(--text-secondary);">Ascending (Low → High)</label>
                             </div>
                         </div>
                     </div>
 
-                    <button class="btn btn-primary" onclick="loadOrderedEntries()">
-                        <i class="fas fa-list-ol"></i> Load Ordered Entries
+                    <button class="btn btn-primary" onclick="loadOrderedEntries()" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border: none;">
+                        <i class="fas fa-trophy"></i> Load Leaderboard
                     </button>
                 </div>
 
@@ -728,68 +752,80 @@
                         <h3 class="card-title"><i class="fas fa-book" style="color: #f093fb;"></i> API Documentation</h3>
                     </div>
                     <div style="padding: 16px;">
-                        <p style="margin-bottom: 16px; color: var(--text-secondary);">
+                        <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px;">
                             <strong style="color: #f093fb;">55+ endpoints available!</strong> All requests cached (60s TTL) with unlimited rate limiting. Add your Roblox cookie in Settings for authenticated endpoints.
                         </p>
-                        <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 10px; line-height: 1.5; max-height: 400px; overflow-y: auto;">
-                            <div style="margin-bottom: 12px;">
-                                <strong style="color: var(--accent-primary);">User Endpoints (15):</strong><br>
-                                <code>GET /proxy/users/{userId}</code> - Profile info<br>
-                                <code>POST /proxy/users/username</code> - Resolve username<br>
-                                <code>GET /proxy/users/{userId}/games</code> - Created games<br>
-                                <code>GET /proxy/users/{userId}/presence</code> - Online status<br>
-                                <code>GET /proxy/users/{userId}/badges</code> - User badges<br>
-                                <code>GET /proxy/users/{userId}/friends</code> - Friends list<br>
-                                <code>GET /proxy/users/{userId}/followers</code> - Followers<br>
-                                <code>GET /proxy/users/{userId}/followings</code> - Following<br>
-                                <code>GET /proxy/users/{userId}/avatar</code> - Avatar items<br>
-                                <code>GET /proxy/users/{userId}/outfits</code> - Saved outfits<br>
-                                <code>GET /proxy/users/{userId}/status</code> - Custom status<br>
-                                <code>GET /proxy/users/{userId}/username-history</code> - Name history<br>
-                                <code>GET /proxy/inventory/{userId}?assetTypes=...</code> - Inventory<br>
-                                <code>GET /proxy/premium/users/{userId}/validate</code> - Check Premium
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.8; max-height: 500px; overflow-y: auto;">
+                            <div style="margin-bottom: 16px;">
+                                <strong style="color: var(--accent-primary); font-size: 14px; display: block; margin-bottom: 8px;">📦 User Endpoints (15):</strong>
+                                <div style="padding-left: 12px; border-left: 3px solid var(--accent-primary);">
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}</code> <span style="color: var(--text-secondary);">- Profile info</span><br>
+                                    <code style="color: #f5576c;">POST</code> <code>/proxy/users/username</code> <span style="color: var(--text-secondary);">- Resolve username</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/games</code> <span style="color: var(--text-secondary);">- Created games</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/presence</code> <span style="color: var(--text-secondary);">- Online status</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/badges</code> <span style="color: var(--text-secondary);">- User badges</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/friends</code> <span style="color: var(--text-secondary);">- Friends list</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/followers</code> <span style="color: var(--text-secondary);">- Followers</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/followings</code> <span style="color: var(--text-secondary);">- Following</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/avatar</code> <span style="color: var(--text-secondary);">- Avatar items</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/outfits</code> <span style="color: var(--text-secondary);">- Saved outfits</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/status</code> <span style="color: var(--text-secondary);">- Custom status</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/users/{userId}/username-history</code> <span style="color: var(--text-secondary);">- Name history</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/inventory/{userId}?assetTypes=...</code> <span style="color: var(--text-secondary);">- Inventory</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/premium/users/{userId}/validate</code> <span style="color: var(--text-secondary);">- Check Premium</span>
+                                </div>
                             </div>
-                            <div style="margin-bottom: 12px;">
-                                <strong style="color: var(--success);">Group Endpoints (6):</strong><br>
-                                <code>GET /proxy/groups/{groupId}</code> - Group info<br>
-                                <code>GET /proxy/groups/{groupId}/games</code> - Group games<br>
-                                <code>GET /proxy/groups/{groupId}/roles</code> - Role hierarchy<br>
-                                <code>GET /proxy/groups/{groupId}/members</code> - Members list<br>
-                                <code>GET /proxy/groups/{groupId}/wall</code> - Wall posts<br>
-                                <code>GET /proxy/groups/{groupId}/social-links</code> - Social links
+                            <div style="margin-bottom: 16px;">
+                                <strong style="color: var(--success); font-size: 14px; display: block; margin-bottom: 8px;">👥 Group Endpoints (6):</strong>
+                                <div style="padding-left: 12px; border-left: 3px solid var(--success);">
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/groups/{groupId}</code> <span style="color: var(--text-secondary);">- Group info</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/groups/{groupId}/games</code> <span style="color: var(--text-secondary);">- Group games</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/groups/{groupId}/roles</code> <span style="color: var(--text-secondary);">- Role hierarchy</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/groups/{groupId}/members</code> <span style="color: var(--text-secondary);">- Members list</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/groups/{groupId}/wall</code> <span style="color: var(--text-secondary);">- Wall posts</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/groups/{groupId}/social-links</code> <span style="color: var(--text-secondary);">- Social links</span>
+                                </div>
                             </div>
-                            <div style="margin-bottom: 12px;">
-                                <strong style="color: var(--warning);">Game Endpoints (10):</strong><br>
-                                <code>GET /proxy/games/{universeId}/servers</code> - Active servers<br>
-                                <code>GET /proxy/games/{universeId}/passes</code> - Game passes<br>
-                                <code>GET /proxy/games/{universeId}/votes</code> - Likes/Dislikes<br>
-                                <code>GET /proxy/games/{universeId}/media</code> - Screenshots/Videos<br>
-                                <code>GET /proxy/games/{universeId}/social-links</code> - Social links<br>
-                                <code>GET /proxy/games/{universeId}/favorites/count</code> - Favorites<br>
-                                <code>GET /proxy/games/{placeId}/details</code> - Place details<br>
-                                <code>GET /proxy/games/search?keyword=...</code> - Search games<br>
-                                <code>GET /proxy/games/sorts</code> - Available sorts<br>
-                                <code>GET /proxy/games/list?sortToken=...</code> - Games by sort
+                            <div style="margin-bottom: 16px;">
+                                <strong style="color: var(--warning); font-size: 14px; display: block; margin-bottom: 8px;">🎮 Game Endpoints (10):</strong>
+                                <div style="padding-left: 12px; border-left: 3px solid var(--warning);">
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/{universeId}/servers</code> <span style="color: var(--text-secondary);">- Active servers</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/{universeId}/passes</code> <span style="color: var(--text-secondary);">- Game passes</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/{universeId}/votes</code> <span style="color: var(--text-secondary);">- Likes/Dislikes</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/{universeId}/media</code> <span style="color: var(--text-secondary);">- Screenshots/Videos</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/{universeId}/social-links</code> <span style="color: var(--text-secondary);">- Social links</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/{universeId}/favorites/count</code> <span style="color: var(--text-secondary);">- Favorites</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/{placeId}/details</code> <span style="color: var(--text-secondary);">- Place details</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/search?keyword=...</code> <span style="color: var(--text-secondary);">- Search games</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/sorts</code> <span style="color: var(--text-secondary);">- Available sorts</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/games/list?sortToken=...</code> <span style="color: var(--text-secondary);">- Games by sort</span>
+                                </div>
                             </div>
-                            <div style="margin-bottom: 12px;">
-                                <strong style="color: var(--info);">Economy & Assets (6):</strong><br>
-                                <code>GET /proxy/assets/{assetId}</code> - Asset details<br>
-                                <code>GET /proxy/badges/{badgeId}</code> - Badge info<br>
-                                <code>GET /proxy/catalog/search?keyword=...</code> - Search catalog<br>
-                                <code>GET /proxy/economy/resale-tax</code> - Current tax rate<br>
-                                <code>GET /proxy/economy/asset/{assetId}/resellers</code> - Limited resellers<br>
-                                <code>GET /proxy/economy/asset/{assetId}/resale-data</code> - RAP & volume
+                            <div style="margin-bottom: 16px;">
+                                <strong style="color: var(--info); font-size: 14px; display: block; margin-bottom: 8px;">💰 Economy & Assets (6):</strong>
+                                <div style="padding-left: 12px; border-left: 3px solid var(--info);">
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/assets/{assetId}</code> <span style="color: var(--text-secondary);">- Asset details</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/badges/{badgeId}</code> <span style="color: var(--text-secondary);">- Badge info</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/catalog/search?keyword=...</code> <span style="color: var(--text-secondary);">- Search catalog</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/economy/resale-tax</code> <span style="color: var(--text-secondary);">- Current tax rate</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/economy/asset/{assetId}/resellers</code> <span style="color: var(--text-secondary);">- Limited resellers</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/economy/asset/{assetId}/resale-data</code> <span style="color: var(--text-secondary);">- RAP & volume</span>
+                                </div>
                             </div>
-                            <div style="margin-bottom: 12px;">
-                                <strong style="color: #ff6b9d;">Thumbnails (4):</strong><br>
-                                <code>GET /proxy/thumbnails/games?universeIds=...</code> - Game icons<br>
-                                <code>GET /proxy/thumbnails/users?userIds=...</code> - User avatars<br>
-                                <code>GET /proxy/thumbnails/groups?groupIds=...</code> - Group icons<br>
-                                <code>GET /proxy/thumbnails/assets?assetIds=...</code> - Asset thumbnails
+                            <div style="margin-bottom: 16px;">
+                                <strong style="color: #ff6b9d; font-size: 14px; display: block; margin-bottom: 8px;">🖼️ Thumbnails (4):</strong>
+                                <div style="padding-left: 12px; border-left: 3px solid #ff6b9d;">
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/thumbnails/games?universeIds=...</code> <span style="color: var(--text-secondary);">- Game icons</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/thumbnails/users?userIds=...</code> <span style="color: var(--text-secondary);">- User avatars</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/thumbnails/groups?groupIds=...</code> <span style="color: var(--text-secondary);">- Group icons</span><br>
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/thumbnails/assets?assetIds=...</code> <span style="color: var(--text-secondary);">- Asset thumbnails</span>
+                                </div>
                             </div>
                             <div>
-                                <strong style="color: #9d4edd;">Misc:</strong><br>
-                                <code>GET /proxy/localization/supported-languages</code> - Languages
+                                <strong style="color: #9d4edd; font-size: 14px; display: block; margin-bottom: 8px;">🔧 Misc:</strong>
+                                <div style="padding-left: 12px; border-left: 3px solid #9d4edd;">
+                                    <code style="color: #43e97b;">GET</code> <code>/proxy/localization/supported-languages</code> <span style="color: var(--text-secondary);">- Languages</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -953,7 +989,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
                     <div>
                         <h2 style="margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                            <i class="fas fa-user-magnifying-glass" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            <i class="fas fa-id-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
                             User Lookup
                         </h2>
                         <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 14px;">Explore user profiles, games, badges, friends, and more</p>

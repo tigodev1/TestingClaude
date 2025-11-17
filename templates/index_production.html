@@ -200,6 +200,10 @@
                     <i class="fas fa-user-circle"></i>
                     <span>User Lookup</span>
                 </div>
+                <div class="nav-item" data-page="proxy">
+                    <i class="fas fa-network-wired"></i>
+                    <span>API Proxy</span>
+                </div>
 
                 <div style="padding: 12px 16px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 600;">System</div>
 
@@ -641,6 +645,101 @@
             </div>
 
             <!-- User Lookup Page - Advanced -->
+            <!-- API Proxy Page -->
+            <div id="page-proxy" class="page">
+                <h2 style="margin-bottom: 24px;">Roblox API Proxy</h2>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="proxyTotalRequests">0</div>
+                        <div class="stat-label">Total Requests</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="proxyCacheHitRate">0%</div>
+                        <div class="stat-label">Cache Hit Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="proxySuccessRate">100%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="proxyCachedRequests">0</div>
+                        <div class="stat-label">Cached Responses</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-book"></i> Proxy Documentation</h3>
+                        <button class="btn btn-primary btn-sm" onclick="loadProxyStats()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div style="padding: 16px;">
+                        <p style="margin-bottom: 16px; color: var(--text-secondary);">
+                            Share these proxy endpoints with your friends! All requests are cached (60s TTL) and rate limited (100 req/min per IP).
+                        </p>
+                        <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 12px; line-height: 1.8;">
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: var(--accent-primary);">User Endpoints:</strong><br>
+                                <code>GET /proxy/users/{userId}</code><br>
+                                <code>POST /proxy/users/username</code><br>
+                                <code>GET /proxy/users/{userId}/games</code><br>
+                                <code>GET /proxy/users/{userId}/groups</code>
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: var(--success);">Group Endpoints:</strong><br>
+                                <code>GET /proxy/groups/{groupId}</code><br>
+                                <code>GET /proxy/groups/{groupId}/games</code>
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: var(--warning);">Game Endpoints:</strong><br>
+                                <code>GET /proxy/games?universeIds=id1,id2</code><br>
+                                <code>GET /proxy/games/votes?universeIds=id1,id2</code>
+                            </div>
+                            <div>
+                                <strong style="color: var(--info);">Thumbnail Endpoints:</strong><br>
+                                <code>GET /proxy/thumbnails/users?userIds=id1,id2</code><br>
+                                <code>GET /proxy/thumbnails/games?universeIds=id1,id2</code><br>
+                                <code>GET /proxy/thumbnails/groups?groupIds=id1,id2</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-chart-line"></i> Top Endpoints</h3>
+                    </div>
+                    <div id="proxyTopEndpoints" style="padding: 16px;">
+                        <p style="color: var(--text-secondary); text-align: center;">Click Refresh to load stats</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-history"></i> Recent Requests</h3>
+                    </div>
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <table class="data-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Client IP</th>
+                                    <th>Endpoint</th>
+                                    <th>Status</th>
+                                    <th>Time</th>
+                                    <th>Cached</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proxyRecentRequests">
+                                <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Click Refresh to load</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div id="page-userlookup" class="page">
                 <h2 style="margin-bottom: 24px;">User Lookup</h2>
 

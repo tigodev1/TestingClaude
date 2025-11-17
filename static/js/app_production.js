@@ -1781,3 +1781,69 @@ function formatLargeNumber(num) {
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
 }
+
+// ===== PROXY ANALYTICS =====
+async function loadProxyStats() {
+    try {
+        // Load stats
+        const statsResponse = await fetch('/proxy/analytics/stats');
+        if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            document.getElementById('proxyTotalRequests').textContent = formatLargeNumber(stats.total_requests);
+            document.getElementById('proxyCacheHitRate').textContent = stats.cache_hit_rate + '%';
+            document.getElementById('proxySuccessRate').textContent = stats.success_rate + '%';
+            document.getElementById('proxyCachedRequests').textContent = formatLargeNumber(stats.cached_requests);
+        }
+
+        // Load top endpoints
+        const endpointsResponse = await fetch('/proxy/analytics/top-endpoints?days=7&limit=10');
+        if (endpointsResponse.ok) {
+            const endpointsData = await endpointsResponse.json();
+            const container = document.getElementById('proxyTopEndpoints');
+
+            if (endpointsData.endpoints && endpointsData.endpoints.length > 0) {
+                container.innerHTML = endpointsData.endpoints.map(ep => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border);">
+                        <code style="font-size: 12px; color: var(--accent-primary);">${escapeHtml(ep.endpoint)}</code>
+                        <div style="text-align: right;">
+                            <span style="color: var(--text-primary); font-weight: 600;">${ep.count}</span>
+                            <span style="color: var(--text-secondary); font-size: 11px; margin-left: 8px;">${ep.avg_response_ms}ms avg</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No requests yet</p>';
+            }
+        }
+
+        // Load recent requests
+        const recentResponse = await fetch('/proxy/analytics/recent?limit=20');
+        if (recentResponse.ok) {
+            const recentData = await recentResponse.json();
+            const tbody = document.getElementById('proxyRecentRequests');
+
+            if (recentData.requests && recentData.requests.length > 0) {
+                tbody.innerHTML = recentData.requests.map(req => {
+                    const time = new Date(req.timestamp).toLocaleTimeString();
+                    const statusClass = req.status_code < 400 ? 'success' : 'danger';
+                    return `
+                        <tr>
+                            <td style="font-size: 11px;">${time}</td>
+                            <td style="font-size: 11px;">${req.client_ip}</td>
+                            <td style="font-size: 11px;"><code>${escapeHtml(req.endpoint)}</code></td>
+                            <td><span class="badge badge-${statusClass}">${req.status_code}</span></td>
+                            <td style="font-size: 11px;">${req.response_time_ms}ms</td>
+                            <td>${req.cached ? '<i class="fas fa-check" style="color: var(--success);"></i>' : ''}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">No requests yet</td></tr>';
+            }
+        }
+
+        showToast('Proxy stats loaded', 'success');
+    } catch (error) {
+        showToast(`Error loading proxy stats: ${error.message}`, 'error');
+    }
+}

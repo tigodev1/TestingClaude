@@ -748,10 +748,20 @@ class OpenCloudAPI:
 
     def get_user_games(self, user_id: str, limit: int = 50) -> Dict:
         """Get games created by user"""
-        url = f"https://games.roblox.com/v2/users/{user_id}/games?accessFilter=All&limit={limit}&sortOrder=Asc"
+        # accessFilter: 1 = Public, 2 = All (including private)
+        url = f"https://games.roblox.com/v2/users/{user_id}/games?accessFilter=2&limit={limit}&sortOrder=Asc"
         data, status = self._make_request("GET", url)
         if status != 200:
             raise Exception(f"Failed to get user games: {data}")
+        return data
+
+    def get_group_games(self, group_id: str, limit: int = 50) -> Dict:
+        """Get games owned by group"""
+        # accessFilter: 2 = All games
+        url = f"https://games.roblox.com/v2/groups/{group_id}/games?accessFilter=2&limit={limit}&sortOrder=Asc"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            return {'data': []}
         return data
 
     def get_user_groups(self, user_id: str) -> Dict:

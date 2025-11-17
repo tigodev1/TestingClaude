@@ -15,6 +15,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.roblox_api import RobloxDataStoreAPI, OrderedDataStoreAPI, OpenCloudAPI
 
+# Import proxy routes
+try:
+    from roblox_proxy import app as proxy_app
+    HAS_PROXY = True
+except ImportError:
+    HAS_PROXY = False
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-this')
 CORS(app)

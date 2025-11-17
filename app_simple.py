@@ -2151,7 +2151,7 @@ def proxy_auth_privacy():
     global roblox_cookie
     if not roblox_cookie:
         return jsonify({'error': 'No cookie set. Add your .ROBLOSECURITY cookie in Settings.'}), 401
-    roblox_url = "https://accountsettings.roblox.com/v1/app-chat-privacy"
+    roblox_url = "https://accountsettings.roblox.com/v1/privacy"
     return jsonify(make_proxy_request(roblox_url, 'auth/privacy')[0]), make_proxy_request(roblox_url, 'auth/privacy')[1]
 
 

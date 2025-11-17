@@ -930,41 +930,38 @@ def get_user_games():
 
         games_data = cloud_api.get_user_games(user_id)
         games = []
+        universe_ids = []
 
+        # First pass - collect basic info and universe IDs
         for game in games_data.get('data', []):
             universe_id = str(game.get('id', ''))
-            thumbnail = cloud_api.get_universe_thumbnail(universe_id) if universe_id else ''
-            place_id = cloud_api.get_place_from_universe(universe_id) if universe_id else ''
-
-            # Get more game stats
-            game_stats = {}
-            votes = {}
             if universe_id:
-                stats_data = cloud_api.get_universe_visits(universe_id)
-                if stats_data.get('data') and len(stats_data['data']) > 0:
-                    game_stats = stats_data['data'][0]
-
-                votes_data = cloud_api.get_universe_votes(universe_id)
-                if votes_data.get('data') and len(votes_data['data']) > 0:
-                    votes = votes_data['data'][0]
-
+                universe_ids.append(universe_id)
             games.append({
                 'id': game.get('id'),
-                'rootPlaceId': place_id or game.get('rootPlaceId', ''),
+                'rootPlaceId': game.get('rootPlaceId', ''),
                 'name': game.get('name'),
                 'description': game.get('description', ''),
-                'visits': game_stats.get('visits', game.get('placeVisits', 0)),
-                'playing': game_stats.get('playing', 0),
-                'favorites': game_stats.get('favoritedCount', 0),
-                'upvotes': votes.get('upVotes', 0),
-                'downvotes': votes.get('downVotes', 0),
+                'visits': game.get('placeVisits', 0),
+                'playing': game.get('playing', 0),
+                'favorites': 0,
+                'upvotes': 0,
+                'downvotes': 0,
                 'created': game.get('created'),
                 'updated': game.get('updated'),
-                'thumbnail': thumbnail
+                'thumbnail': ''
             })
+
+        # Batch fetch thumbnails (single API call for all games)
+        if universe_ids:
+            thumbnails = cloud_api.get_game_thumbnails_batch(universe_ids)
+            for game in games:
+                game['thumbnail'] = thumbnails.get(str(game['id']), '')
 
         return jsonify({'games': games, 'count': len(games)})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -981,12 +978,15 @@ def get_user_groups():
 
         groups_data = cloud_api.get_user_groups(user_id)
         groups = []
+        group_ids = []
 
+        # First pass - collect group info and IDs
         for group_entry in groups_data.get('data', []):
             group = group_entry.get('group', {})
             role = group_entry.get('role', {})
             group_id = str(group.get('id', ''))
-            thumbnail = cloud_api.get_group_thumbnail(group_id) if group_id else ''
+            if group_id:
+                group_ids.append(group_id)
 
             groups.append({
                 'id': group.get('id'),
@@ -995,11 +995,19 @@ def get_user_groups():
                 'memberCount': group.get('memberCount', 0),
                 'role': role.get('name', 'Member'),
                 'roleRank': role.get('rank', 0),
-                'thumbnail': thumbnail
+                'thumbnail': ''
             })
+
+        # Batch fetch thumbnails (single API call)
+        if group_ids:
+            thumbnails = cloud_api.get_group_thumbnails_batch(group_ids)
+            for group in groups:
+                group['thumbnail'] = thumbnails.get(str(group['id']), '')
 
         return jsonify({'groups': groups, 'count': len(groups)})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -1018,6 +1026,7 @@ def get_user_group_games():
         groups_data = cloud_api.get_user_groups(user_id)
         all_games = []
         seen_ids = set()
+        universe_ids = []
 
         for group_entry in groups_data.get('data', []):
             group = group_entry.get('group', {})
@@ -1035,38 +1044,35 @@ def get_user_group_games():
                     if game_id and game_id not in seen_ids:
                         seen_ids.add(game_id)
                         universe_id = str(game_id)
-                        thumbnail = cloud_api.get_universe_thumbnail(universe_id)
-                        place_id = cloud_api.get_place_from_universe(universe_id)
-
-                        # Get stats
-                        game_stats = {}
-                        votes = {}
-                        stats_data = cloud_api.get_universe_visits(universe_id)
-                        if stats_data.get('data') and len(stats_data['data']) > 0:
-                            game_stats = stats_data['data'][0]
-                        votes_data = cloud_api.get_universe_votes(universe_id)
-                        if votes_data.get('data') and len(votes_data['data']) > 0:
-                            votes = votes_data['data'][0]
+                        universe_ids.append(universe_id)
 
                         all_games.append({
                             'id': game_id,
-                            'rootPlaceId': place_id or game.get('rootPlaceId', ''),
+                            'rootPlaceId': game.get('rootPlaceId', ''),
                             'name': game.get('name'),
                             'description': game.get('description', ''),
-                            'visits': game_stats.get('visits', game.get('placeVisits', 0)),
-                            'playing': game_stats.get('playing', 0),
-                            'favorites': game_stats.get('favoritedCount', 0),
-                            'upvotes': votes.get('upVotes', 0),
-                            'downvotes': votes.get('downVotes', 0),
-                            'thumbnail': thumbnail,
+                            'visits': game.get('placeVisits', 0),
+                            'playing': game.get('playing', 0),
+                            'favorites': 0,
+                            'upvotes': 0,
+                            'downvotes': 0,
+                            'thumbnail': '',
                             'groupName': group_name,
                             'groupId': group_id
                         })
             except:
                 continue  # Skip groups we can't fetch games for
 
+        # Batch fetch thumbnails (single API call for all games)
+        if universe_ids:
+            thumbnails = cloud_api.get_game_thumbnails_batch(universe_ids)
+            for game in all_games:
+                game['thumbnail'] = thumbnails.get(str(game['id']), '')
+
         return jsonify({'games': all_games, 'count': len(all_games)})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 

@@ -784,6 +784,40 @@ class OpenCloudAPI:
             pass
         return 0
 
+    def get_game_thumbnails_batch(self, universe_ids: list) -> Dict:
+        """Get multiple game thumbnails in one request"""
+        if not universe_ids:
+            return {}
+        ids_str = ','.join([str(uid) for uid in universe_ids[:100]])  # Max 100
+        url = f"https://thumbnails.roblox.com/v1/games/icons?universeIds={ids_str}&size=512x512&format=Png&isCircular=false"
+        try:
+            response = requests.get(url, timeout=15)
+            data = response.json()
+            result = {}
+            for item in data.get('data', []):
+                result[str(item.get('targetId', ''))] = item.get('imageUrl', '')
+            return result
+        except:
+            pass
+        return {}
+
+    def get_group_thumbnails_batch(self, group_ids: list) -> Dict:
+        """Get multiple group thumbnails in one request"""
+        if not group_ids:
+            return {}
+        ids_str = ','.join([str(gid) for gid in group_ids[:100]])
+        url = f"https://thumbnails.roblox.com/v1/groups/icons?groupIds={ids_str}&size=150x150&format=Png&isCircular=false"
+        try:
+            response = requests.get(url, timeout=15)
+            data = response.json()
+            result = {}
+            for item in data.get('data', []):
+                result[str(item.get('targetId', ''))] = item.get('imageUrl', '')
+            return result
+        except:
+            pass
+        return {}
+
     def get_game_thumbnail(self, universe_id: str) -> str:
         """Get game thumbnail by universe ID"""
         url = f"https://thumbnails.roblox.com/v1/games/icons?universeIds={universe_id}&size=512x512&format=Png&isCircular=false"

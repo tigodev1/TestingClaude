@@ -689,7 +689,7 @@ def analytics_errors():
 
 # ===== ORDERED DATASTORE ENDPOINTS =====
 @app.route('/api/ordered/list')
-def list_ordered_entries():
+def list_ordered_entries_route():
     if not ordered_api_client:
         return jsonify({'error': 'API not configured'}), 400
 
@@ -702,7 +702,9 @@ def list_ordered_entries():
         if not datastore:
             return jsonify({'error': 'Datastore name required'}), 400
 
-        entries = ordered_api_client.list_entries(datastore, scope, ascending, limit)
+        # Use the correct method name
+        result = ordered_api_client.list_ordered_entries(datastore, scope, ascending, limit)
+        entries = result.get('entries', [])
         log_operation('LIST_ORDERED', datastore, success=True, details=f'Found {len(entries)}')
         return jsonify({'entries': entries, 'count': len(entries)})
     except Exception as e:
@@ -724,19 +726,20 @@ def handle_ordered_entry():
 
     try:
         if request.method == 'GET':
-            value = ordered_api_client.get_entry(datastore, key, scope)
-            log_operation('GET_ORDERED', datastore, key, True)
-            return jsonify({'value': value})
+            # Ordered datastores don't have a direct "get" - we'd need to list and filter
+            # For now, return an error
+            return jsonify({'error': 'Direct get not supported for ordered datastores'}), 400
 
         elif request.method == 'POST':
             data = request.get_json()
             value = int(data.get('value', 0))
-            result = ordered_api_client.set_entry(datastore, key, value, scope)
+            # Create or update ordered entry
+            result = ordered_api_client.create_ordered_entry(datastore, key, value, scope)
             log_operation('SET_ORDERED', datastore, key, True)
             return jsonify(result)
 
         elif request.method == 'DELETE':
-            ordered_api_client.delete_entry(datastore, key, scope)
+            ordered_api_client.delete_ordered_entry(datastore, key, scope)
             log_operation('DELETE_ORDERED', datastore, key, True)
             return jsonify({'status': 'success', 'message': f'Ordered entry {key} deleted'})
 
@@ -758,7 +761,7 @@ def increment_ordered():
         data = request.get_json()
         increment_by = int(data.get('increment_by', 1))
 
-        result = ordered_api_client.increment_entry(datastore, key, increment_by, scope)
+        result = ordered_api_client.increment_ordered_entry(datastore, key, increment_by, scope)
         log_operation('INCREMENT_ORDERED', datastore, key, True)
         return jsonify({'value': result})
     except Exception as e:

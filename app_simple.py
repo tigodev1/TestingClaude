@@ -1246,22 +1246,41 @@ def proxy_roblox_request(roblox_url, method='GET', params=None, json_data=None):
     """Make proxied request to Roblox"""
     import requests as req
     start_time = time.time()
-    headers = {'User-Agent': 'RobloxProxy/1.0', 'Accept': 'application/json'}
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
     try:
         if method == 'GET':
-            response = req.get(roblox_url, params=params, headers=headers, timeout=30)
+            response = req.get(roblox_url, params=params, headers=headers, timeout=15)
         else:
-            response = req.post(roblox_url, params=params, json=json_data, headers=headers, timeout=30)
+            response = req.post(roblox_url, params=params, json=json_data, headers=headers, timeout=15)
         response_time = int((time.time() - start_time) * 1000)
-        try:
-            data = response.json()
-        except:
-            data = {'raw': response.text}
+
+        # Check if response is JSON
+        content_type = response.headers.get('Content-Type', '')
+        if 'application/json' in content_type:
+            try:
+                data = response.json()
+            except:
+                data = {'error': 'Invalid JSON response', 'status': response.status_code}
+        elif 'text/html' in content_type:
+            # HTML response usually means error page
+            data = {'error': 'Roblox returned HTML (possible rate limit or invalid endpoint)', 'status': response.status_code}
+        else:
+            try:
+                data = response.json()
+            except:
+                data = {'error': f'Unexpected response type: {content_type}', 'raw': response.text[:500]}
+
         return data, response.status_code, response_time
     except req.exceptions.Timeout:
-        return {'error': 'Timeout'}, 504, int((time.time() - start_time) * 1000)
+        return {'error': 'Request timeout - Roblox API took too long'}, 504, int((time.time() - start_time) * 1000)
+    except req.exceptions.ConnectionError:
+        return {'error': 'Connection failed - check internet or Roblox status'}, 503, int((time.time() - start_time) * 1000)
     except Exception as e:
-        return {'error': str(e)}, 500, int((time.time() - start_time) * 1000)
+        return {'error': f'Request failed: {str(e)}'}, 500, int((time.time() - start_time) * 1000)
 
 
 # Initialize proxy DB

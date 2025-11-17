@@ -1921,13 +1921,33 @@ async function testProxyApi() {
         const endTime = performance.now();
         const responseTime = Math.round(endTime - startTime);
 
-        const data = await response.json();
+        // Try to parse as JSON, handle non-JSON responses gracefully
+        let data;
+        const contentType = response.headers.get('content-type') || '';
+        const responseText = await response.text();
+
+        if (contentType.includes('application/json')) {
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                data = { error: 'Invalid JSON response', raw: responseText.substring(0, 500) };
+            }
+        } else if (contentType.includes('text/html')) {
+            data = { error: 'Server returned HTML instead of JSON (possible server error or rate limit)', raw: responseText.substring(0, 200) };
+        } else {
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                data = { error: `Unexpected content type: ${contentType}`, raw: responseText.substring(0, 500) };
+            }
+        }
+
         lastApiResponse = data; // Save for copy/download
         const jsonString = JSON.stringify(data, null, 2);
         const sizeBytes = new Blob([jsonString]).size;
 
         // Update status with color
-        const statusClass = response.status < 400 ? 'var(--success)' : 'var(--danger)';
+        const statusClass = response.status < 400 && !data.error ? 'var(--success)' : 'var(--danger)';
         statusSpan.innerHTML = `<span style="color: ${statusClass}; font-weight: 600;">${response.status} ${response.statusText}</span>`;
         timeSpan.textContent = `${responseTime}ms`;
         sizeSpan.textContent = sizeBytes > 1024 ? `${(sizeBytes / 1024).toFixed(1)} KB` : `${sizeBytes} bytes`;
@@ -1938,12 +1958,16 @@ async function testProxyApi() {
         // Add to request history
         addToRequestHistory(method, url, response.status, responseTime);
 
-        showToast(`API request completed (${response.status})`, response.status < 400 ? 'success' : 'error');
+        if (data.error) {
+            showToast(`API returned error: ${data.error}`, 'error');
+        } else {
+            showToast(`API request completed (${response.status})`, response.status < 400 ? 'success' : 'error');
+        }
     } catch (error) {
-        statusSpan.innerHTML = `<span style="color: var(--danger); font-weight: 600;">Error</span>`;
+        statusSpan.innerHTML = `<span style="color: var(--danger); font-weight: 600;">Network Error</span>`;
         timeSpan.textContent = `${Math.round(performance.now() - startTime)}ms`;
-        responseBox.textContent = `Error: ${error.message}`;
-        showToast(`API request failed: ${error.message}`, 'error');
+        responseBox.textContent = `Network Error: ${error.message}\n\nThis could mean:\n- The endpoint doesn't exist\n- Network connection issue\n- CORS blocked the request`;
+        showToast(`Network error: ${error.message}`, 'error');
     } finally {
         btn.classList.remove('loading');
     }

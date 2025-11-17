@@ -590,3 +590,160 @@ class OrderedDataStoreAPI(RobloxDataStoreAPI):
         if status != 204 and status != 200:
             raise Exception(f"Failed to delete ordered entry: {result}")
         return True
+
+
+class OpenCloudAPI:
+    """Extended Open Cloud API client for universes, places, users, groups"""
+
+    BASE_URL = "https://apis.roblox.com"
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.session = requests.Session()
+        self.session.headers.update({
+            "x-api-key": api_key,
+            "Content-Type": "application/json"
+        })
+
+    def _make_request(self, method: str, url: str, params: Optional[Dict] = None) -> Tuple[Any, int]:
+        """Make an API request"""
+        try:
+            if method == "GET":
+                response = self.session.get(url, params=params, timeout=30)
+            else:
+                response = self.session.request(method, url, params=params, timeout=30)
+
+            try:
+                return response.json(), response.status_code
+            except:
+                return response.text, response.status_code
+        except Exception as e:
+            raise Exception(f"Request failed: {str(e)}")
+
+    # ===== UNIVERSE/PLACE INFO =====
+    def get_universe_info(self, universe_id: str) -> Dict:
+        """Get universe information"""
+        data, status = self._make_request(
+            "GET",
+            f"{self.BASE_URL}/cloud/v2/universes/{universe_id}"
+        )
+        if status != 200:
+            raise Exception(f"Failed to get universe info: {data}")
+        return data
+
+    def get_place_info(self, universe_id: str, place_id: str) -> Dict:
+        """Get place information"""
+        data, status = self._make_request(
+            "GET",
+            f"{self.BASE_URL}/cloud/v2/universes/{universe_id}/places/{place_id}"
+        )
+        if status != 200:
+            raise Exception(f"Failed to get place info: {data}")
+        return data
+
+    def restart_universe_servers(self, universe_id: str) -> Dict:
+        """Restart all servers in universe"""
+        data, status = self._make_request(
+            "POST",
+            f"{self.BASE_URL}/cloud/v2/universes/{universe_id}:restartServers"
+        )
+        if status != 200:
+            raise Exception(f"Failed to restart servers: {data}")
+        return data
+
+    # ===== THUMBNAILS =====
+    def get_universe_thumbnail(self, universe_id: str) -> str:
+        """Get universe thumbnail URL"""
+        # Use the Roblox thumbnails API
+        url = f"https://thumbnails.roblox.com/v1/games/icons?universeIds={universe_id}&size=512x512&format=Png&isCircular=false"
+        try:
+            response = requests.get(url, timeout=10)
+            data = response.json()
+            if data.get('data') and len(data['data']) > 0:
+                return data['data'][0].get('imageUrl', '')
+        except:
+            pass
+        return ''
+
+    def get_user_thumbnail(self, user_id: str) -> str:
+        """Get user avatar thumbnail"""
+        url = f"https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds={user_id}&size=420x420&format=Png"
+        try:
+            response = requests.get(url, timeout=10)
+            data = response.json()
+            if data.get('data') and len(data['data']) > 0:
+                return data['data'][0].get('imageUrl', '')
+        except:
+            pass
+        return ''
+
+    def get_group_thumbnail(self, group_id: str) -> str:
+        """Get group emblem"""
+        url = f"https://thumbnails.roblox.com/v1/groups/icons?groupIds={group_id}&size=420x420&format=Png"
+        try:
+            response = requests.get(url, timeout=10)
+            data = response.json()
+            if data.get('data') and len(data['data']) > 0:
+                return data['data'][0].get('imageUrl', '')
+        except:
+            pass
+        return ''
+
+    # ===== USER INFO (Public API) =====
+    def get_user_info(self, user_id: str) -> Dict:
+        """Get user information from public API"""
+        url = f"https://users.roblox.com/v1/users/{user_id}"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            raise Exception(f"Failed to get user info: {data}")
+        return data
+
+    def get_user_by_username(self, username: str) -> Dict:
+        """Get user by username"""
+        url = f"https://users.roblox.com/v1/users/search?keyword={username}&limit=10"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            raise Exception(f"Failed to search user: {data}")
+        return data
+
+    # ===== GROUP INFO (Public API) =====
+    def get_group_info(self, group_id: str) -> Dict:
+        """Get group information"""
+        url = f"https://groups.roblox.com/v1/groups/{group_id}"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            raise Exception(f"Failed to get group info: {data}")
+        return data
+
+    def get_group_games(self, group_id: str, limit: int = 50) -> Dict:
+        """Get games owned by group"""
+        url = f"https://games.roblox.com/v2/groups/{group_id}/games?accessFilter=All&limit={limit}&sortOrder=Asc"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            raise Exception(f"Failed to get group games: {data}")
+        return data
+
+    # ===== GAME STATS =====
+    def get_universe_votes(self, universe_id: str) -> Dict:
+        """Get game votes (likes/dislikes)"""
+        url = f"https://games.roblox.com/v1/games/votes?universeIds={universe_id}"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            return {'data': []}
+        return data
+
+    def get_universe_visits(self, universe_id: str) -> Dict:
+        """Get game visit count"""
+        url = f"https://games.roblox.com/v1/games?universeIds={universe_id}"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            return {'data': []}
+        return data
+
+    def get_user_games(self, user_id: str, limit: int = 50) -> Dict:
+        """Get games created by user"""
+        url = f"https://games.roblox.com/v2/users/{user_id}/games?accessFilter=All&limit={limit}&sortOrder=Asc"
+        data, status = self._make_request("GET", url)
+        if status != 200:
+            raise Exception(f"Failed to get user games: {data}")
+        return data

@@ -13,7 +13,7 @@ from flask_cors import CORS
 # Import our API client
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from src.roblox_api import RobloxDataStoreAPI, OrderedDataStoreAPI
+from src.roblox_api import RobloxDataStoreAPI, OrderedDataStoreAPI, OpenCloudAPI
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-this')
@@ -22,6 +22,7 @@ CORS(app)
 # Global state
 api_client = None
 ordered_api_client = None
+cloud_api = None
 config_data = {
     'api_key': '',
     'universe_id': ''
@@ -82,7 +83,7 @@ def save_config_to_db(api_key, universe_id):
 
 def load_config_from_db():
     """Load config from database"""
-    global api_client, ordered_api_client, config_data
+    global api_client, ordered_api_client, cloud_api, config_data
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -95,6 +96,7 @@ def load_config_from_db():
             config_data['universe_id'] = row[1]
             api_client = RobloxDataStoreAPI(row[0], row[1])
             ordered_api_client = OrderedDataStoreAPI(row[0], row[1])
+            cloud_api = OpenCloudAPI(row[0])
             print(f"Loaded config for universe: {row[1]}")
             return True
     except Exception as e:
@@ -130,7 +132,7 @@ def index():
 
 @app.route('/api/config', methods=['GET', 'POST'])
 def handle_config():
-    global api_client, ordered_api_client, config_data
+    global api_client, ordered_api_client, cloud_api, config_data
 
     try:
         if request.method == 'POST':
@@ -155,6 +157,7 @@ def handle_config():
             # Create API clients (both standard and ordered)
             api_client = RobloxDataStoreAPI(api_key, universe_id)
             ordered_api_client = OrderedDataStoreAPI(api_key, universe_id)
+            cloud_api = OpenCloudAPI(api_key)
 
             # Save to database for persistence across restarts
             save_config_to_db(api_key, universe_id)
@@ -816,6 +819,170 @@ def delete_all_keys():
         })
     except Exception as e:
         log_operation('DELETE_ALL', data.get('datastore', ''), success=False, details=str(e))
+        return jsonify({'error': str(e)}), 500
+
+
+# ===== OPEN CLOUD API ENDPOINTS =====
+@app.route('/api/universe/info')
+def get_universe_info():
+    """Get current universe info and stats"""
+    if not cloud_api or not config_data['universe_id']:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        universe_id = config_data['universe_id']
+
+        # Get thumbnail
+        thumbnail = cloud_api.get_universe_thumbnail(universe_id)
+
+        # Get visits and stats
+        visits_data = cloud_api.get_universe_visits(universe_id)
+        game_data = {}
+        if visits_data.get('data') and len(visits_data['data']) > 0:
+            game_data = visits_data['data'][0]
+
+        # Get votes
+        votes_data = cloud_api.get_universe_votes(universe_id)
+        votes = {}
+        if votes_data.get('data') and len(votes_data['data']) > 0:
+            votes = votes_data['data'][0]
+
+        return jsonify({
+            'universe_id': universe_id,
+            'name': game_data.get('name', 'Unknown'),
+            'description': game_data.get('description', ''),
+            'creator': game_data.get('creator', {}),
+            'visits': game_data.get('visits', 0),
+            'playing': game_data.get('playing', 0),
+            'favorites': game_data.get('favoritedCount', 0),
+            'thumbnail': thumbnail,
+            'upvotes': votes.get('upVotes', 0),
+            'downvotes': votes.get('downVotes', 0),
+            'created': game_data.get('created', ''),
+            'updated': game_data.get('updated', '')
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/info')
+def get_user_info():
+    """Get user information"""
+    if not cloud_api:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        user_id = request.args.get('user_id', '')
+        if not user_id:
+            return jsonify({'error': 'User ID required'}), 400
+
+        user_data = cloud_api.get_user_info(user_id)
+        thumbnail = cloud_api.get_user_thumbnail(user_id)
+
+        return jsonify({
+            'id': user_data.get('id'),
+            'name': user_data.get('name'),
+            'displayName': user_data.get('displayName'),
+            'description': user_data.get('description', ''),
+            'created': user_data.get('created'),
+            'isBanned': user_data.get('isBanned', False),
+            'thumbnail': thumbnail
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/games')
+def get_user_games():
+    """Get games created by user"""
+    if not cloud_api:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        user_id = request.args.get('user_id', '')
+        if not user_id:
+            return jsonify({'error': 'User ID required'}), 400
+
+        games_data = cloud_api.get_user_games(user_id)
+        games = []
+
+        for game in games_data.get('data', []):
+            universe_id = str(game.get('id', ''))
+            thumbnail = cloud_api.get_universe_thumbnail(universe_id) if universe_id else ''
+
+            games.append({
+                'id': game.get('id'),
+                'name': game.get('name'),
+                'description': game.get('description', ''),
+                'visits': game.get('placeVisits', 0),
+                'created': game.get('created'),
+                'updated': game.get('updated'),
+                'thumbnail': thumbnail
+            })
+
+        return jsonify({'games': games, 'count': len(games)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/group/info')
+def get_group_info():
+    """Get group information"""
+    if not cloud_api:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        group_id = request.args.get('group_id', '')
+        if not group_id:
+            return jsonify({'error': 'Group ID required'}), 400
+
+        group_data = cloud_api.get_group_info(group_id)
+        thumbnail = cloud_api.get_group_thumbnail(group_id)
+
+        return jsonify({
+            'id': group_data.get('id'),
+            'name': group_data.get('name'),
+            'description': group_data.get('description', ''),
+            'owner': group_data.get('owner', {}),
+            'memberCount': group_data.get('memberCount', 0),
+            'isBuildersClubOnly': group_data.get('isBuildersClubOnly', False),
+            'publicEntryAllowed': group_data.get('publicEntryAllowed', True),
+            'thumbnail': thumbnail
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/group/games')
+def get_group_games():
+    """Get games owned by group"""
+    if not cloud_api:
+        return jsonify({'error': 'API not configured'}), 400
+
+    try:
+        group_id = request.args.get('group_id', '')
+        if not group_id:
+            return jsonify({'error': 'Group ID required'}), 400
+
+        games_data = cloud_api.get_group_games(group_id)
+        games = []
+
+        for game in games_data.get('data', []):
+            universe_id = str(game.get('id', ''))
+            thumbnail = cloud_api.get_universe_thumbnail(universe_id) if universe_id else ''
+
+            games.append({
+                'id': game.get('id'),
+                'name': game.get('name'),
+                'description': game.get('description', ''),
+                'visits': game.get('placeVisits', 0),
+                'created': game.get('created'),
+                'updated': game.get('updated'),
+                'thumbnail': thumbnail
+            })
+
+        return jsonify({'games': games, 'count': len(games)})
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 

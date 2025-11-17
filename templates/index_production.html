@@ -193,6 +193,24 @@
                     <i class="fas fa-list-ol"></i>
                     <span>Ordered DataStores</span>
                 </div>
+
+                <div style="padding: 12px 16px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-primary); font-weight: 600;">Open Cloud</div>
+
+                <div class="nav-item" data-page="gameinfo">
+                    <i class="fas fa-gamepad"></i>
+                    <span>Game Info</span>
+                </div>
+                <div class="nav-item" data-page="userlookup">
+                    <i class="fas fa-user"></i>
+                    <span>User Lookup</span>
+                </div>
+                <div class="nav-item" data-page="grouplookup">
+                    <i class="fas fa-users"></i>
+                    <span>Group Lookup</span>
+                </div>
+
+                <div style="padding: 12px 16px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 600;">System</div>
+
                 <div class="nav-item" data-page="backups">
                     <i class="fas fa-cloud-arrow-down"></i>
                     <span>Backups</span>
@@ -627,6 +645,94 @@
                     <button class="btn btn-success" onclick="createOrderedEntry()" style="margin-top: 16px;">
                         <i class="fas fa-plus"></i> Create/Update Entry
                     </button>
+                </div>
+            </div>
+
+            <!-- Game Info Page -->
+            <div id="page-gameinfo" class="page">
+                <h2 style="margin-bottom: 24px;">Game Information</h2>
+
+                <div id="gameInfoContent">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Current Universe Stats</h3>
+                            <button class="btn btn-primary" onclick="loadGameInfo()">
+                                <i class="fas fa-sync"></i> Load Stats
+                            </button>
+                        </div>
+                        <div id="gameInfoDisplay" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-gamepad" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 16px;"></i>
+                            <p style="color: var(--text-secondary);">Click "Load Stats" to fetch game information</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Lookup Page -->
+            <div id="page-userlookup" class="page">
+                <h2 style="margin-bottom: 24px;">User Lookup</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Search User</h3>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: flex-end;">
+                        <div class="form-group" style="flex: 1; margin: 0;">
+                            <label class="form-label">User ID</label>
+                            <input type="text" class="form-input" id="userIdInput" placeholder="e.g., 1234567">
+                        </div>
+                        <button class="btn btn-primary" onclick="lookupUser()">
+                            <i class="fas fa-search"></i> Lookup
+                        </button>
+                    </div>
+                </div>
+
+                <div id="userInfoCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">User Profile</h3>
+                    </div>
+                    <div id="userInfoDisplay"></div>
+                </div>
+
+                <div id="userGamesCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">User's Games</h3>
+                    </div>
+                    <div id="userGamesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;"></div>
+                </div>
+            </div>
+
+            <!-- Group Lookup Page -->
+            <div id="page-grouplookup" class="page">
+                <h2 style="margin-bottom: 24px;">Group Lookup</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Search Group</h3>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: flex-end;">
+                        <div class="form-group" style="flex: 1; margin: 0;">
+                            <label class="form-label">Group ID</label>
+                            <input type="text" class="form-input" id="groupIdInput" placeholder="e.g., 1234567">
+                        </div>
+                        <button class="btn btn-primary" onclick="lookupGroup()">
+                            <i class="fas fa-search"></i> Lookup
+                        </button>
+                    </div>
+                </div>
+
+                <div id="groupInfoCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Group Profile</h3>
+                    </div>
+                    <div id="groupInfoDisplay"></div>
+                </div>
+
+                <div id="groupGamesCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Group's Games</h3>
+                    </div>
+                    <div id="groupGamesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;"></div>
                 </div>
             </div>
 

@@ -1410,3 +1410,214 @@ async function deleteAllKeys() {
         showToast(`Error: ${error.message}`, 'error');
     }
 }
+
+// ===== OPEN CLOUD API FUNCTIONS =====
+
+// Game Info
+async function loadGameInfo() {
+    if (!isConnected) {
+        showToast('Please configure API first', 'warning');
+        return;
+    }
+
+    showToast('Loading game info...', 'info');
+
+    try {
+        const response = await fetch('/api/universe/info');
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        const display = document.getElementById('gameInfoDisplay');
+        const likePct = data.upvotes + data.downvotes > 0
+            ? Math.round((data.upvotes / (data.upvotes + data.downvotes)) * 100)
+            : 0;
+
+        display.innerHTML = `
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: start; text-align: left;">
+                <img src="${data.thumbnail || ''}" alt="Game Icon" style="width: 150px; height: 150px; border-radius: 12px; background: var(--bg-card);" onerror="this.style.display='none'">
+                <div>
+                    <h2 style="margin: 0 0 8px 0; color: var(--text-primary);">${escapeHtml(data.name)}</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">${escapeHtml(data.description || 'No description').substring(0, 200)}...</p>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div class="stat-card">
+                            <div class="stat-value">${formatLargeNumber(data.visits)}</div>
+                            <div class="stat-label">Visits</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${formatLargeNumber(data.playing)}</div>
+                            <div class="stat-label">Playing</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${formatLargeNumber(data.favorites)}</div>
+                            <div class="stat-label">Favorites</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${likePct}%</div>
+                            <div class="stat-label">Like Ratio</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 16px; display: flex; gap: 16px;">
+                        <div style="color: var(--success);">
+                            <i class="fas fa-thumbs-up"></i> ${formatLargeNumber(data.upvotes)} Likes
+                        </div>
+                        <div style="color: var(--danger);">
+                            <i class="fas fa-thumbs-down"></i> ${formatLargeNumber(data.downvotes)} Dislikes
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        showToast('Game info loaded!', 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// User Lookup
+async function lookupUser() {
+    const userId = document.getElementById('userIdInput').value.trim();
+    if (!userId) {
+        showToast('Please enter a User ID', 'error');
+        return;
+    }
+
+    showToast('Looking up user...', 'info');
+
+    try {
+        // Get user info
+        const userResponse = await fetch(`/api/user/info?user_id=${userId}`);
+        const userData = await userResponse.json();
+
+        if (userData.error) {
+            showToast(`Error: ${userData.error}`, 'error');
+            return;
+        }
+
+        // Display user info
+        const userCard = document.getElementById('userInfoCard');
+        const userDisplay = document.getElementById('userInfoDisplay');
+        userCard.style.display = 'block';
+
+        userDisplay.innerHTML = `
+            <div style="display: flex; gap: 24px; align-items: center; padding: 16px;">
+                <img src="${userData.thumbnail || ''}" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; background: var(--bg-card);" onerror="this.style.display='none'">
+                <div>
+                    <h3 style="margin: 0 0 4px 0;">${escapeHtml(userData.displayName)}</h3>
+                    <p style="color: var(--text-secondary); margin: 0 0 8px 0;">@${escapeHtml(userData.name)}</p>
+                    <p style="margin: 0; font-size: 14px;">${escapeHtml(userData.description || 'No description').substring(0, 150)}</p>
+                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 12px;">
+                        User ID: ${userData.id} | Joined: ${new Date(userData.created).toLocaleDateString()}
+                        ${userData.isBanned ? '<span style="color: var(--danger);"> | BANNED</span>' : ''}
+                    </p>
+                </div>
+            </div>
+        `;
+
+        // Get user's games
+        const gamesResponse = await fetch(`/api/user/games?user_id=${userId}`);
+        const gamesData = await gamesResponse.json();
+
+        if (!gamesData.error && gamesData.games.length > 0) {
+            const gamesCard = document.getElementById('userGamesCard');
+            const gamesGrid = document.getElementById('userGamesGrid');
+            gamesCard.style.display = 'block';
+
+            gamesGrid.innerHTML = gamesData.games.map(game => `
+                <div class="card" style="margin: 0;">
+                    <img src="${game.thumbnail || ''}" alt="${escapeHtml(game.name)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background: var(--bg-card);" onerror="this.style.display='none'">
+                    <h4 style="margin: 0 0 8px 0;">${escapeHtml(game.name)}</h4>
+                    <p style="color: var(--text-secondary); font-size: 12px; margin: 0;">
+                        <i class="fas fa-eye"></i> ${formatLargeNumber(game.visits)} visits
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        showToast('User found!', 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// Group Lookup
+async function lookupGroup() {
+    const groupId = document.getElementById('groupIdInput').value.trim();
+    if (!groupId) {
+        showToast('Please enter a Group ID', 'error');
+        return;
+    }
+
+    showToast('Looking up group...', 'info');
+
+    try {
+        // Get group info
+        const groupResponse = await fetch(`/api/group/info?group_id=${groupId}`);
+        const groupData = await groupResponse.json();
+
+        if (groupData.error) {
+            showToast(`Error: ${groupData.error}`, 'error');
+            return;
+        }
+
+        // Display group info
+        const groupCard = document.getElementById('groupInfoCard');
+        const groupDisplay = document.getElementById('groupInfoDisplay');
+        groupCard.style.display = 'block';
+
+        groupDisplay.innerHTML = `
+            <div style="display: flex; gap: 24px; align-items: center; padding: 16px;">
+                <img src="${groupData.thumbnail || ''}" alt="Group Icon" style="width: 100px; height: 100px; border-radius: 12px; background: var(--bg-card);" onerror="this.style.display='none'">
+                <div>
+                    <h3 style="margin: 0 0 4px 0;">${escapeHtml(groupData.name)}</h3>
+                    <p style="color: var(--text-secondary); margin: 0 0 8px 0;">
+                        <i class="fas fa-users"></i> ${formatLargeNumber(groupData.memberCount)} members
+                    </p>
+                    <p style="margin: 0; font-size: 14px;">${escapeHtml(groupData.description || 'No description').substring(0, 150)}</p>
+                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 12px;">
+                        Group ID: ${groupData.id} | Owner: ${groupData.owner?.username || 'Unknown'}
+                    </p>
+                </div>
+            </div>
+        `;
+
+        // Get group's games
+        const gamesResponse = await fetch(`/api/group/games?group_id=${groupId}`);
+        const gamesData = await gamesResponse.json();
+
+        if (!gamesData.error && gamesData.games.length > 0) {
+            const gamesCard = document.getElementById('groupGamesCard');
+            const gamesGrid = document.getElementById('groupGamesGrid');
+            gamesCard.style.display = 'block';
+
+            gamesGrid.innerHTML = gamesData.games.map(game => `
+                <div class="card" style="margin: 0;">
+                    <img src="${game.thumbnail || ''}" alt="${escapeHtml(game.name)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background: var(--bg-card);" onerror="this.style.display='none'">
+                    <h4 style="margin: 0 0 8px 0;">${escapeHtml(game.name)}</h4>
+                    <p style="color: var(--text-secondary); font-size: 12px; margin: 0;">
+                        <i class="fas fa-eye"></i> ${formatLargeNumber(game.visits)} visits
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        showToast('Group found!', 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// Helper function for large numbers
+function formatLargeNumber(num) {
+    if (!num) return '0';
+    if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+}

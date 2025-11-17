@@ -1,0 +1,1104 @@
+/**
+ * Roblox DataStore Manager - Production App
+ * Clean, polished version
+ */
+
+// ===== GLOBAL STATE =====
+let currentDatastore = '';
+let currentScope = 'global';
+let currentKey = '';
+let selectedEntries = new Set();
+let isConnected = false;
+let autoRefreshInterval = null;
+
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DataStore Manager loaded');
+    initNavigation();
+    initTabs();
+    loadDashboard();
+
+    // Don't auto-refresh rate limits until connected
+    updateConnectionStatus(false);
+});
+
+// ===== NAVIGATION =====
+function initNavigation() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const page = this.dataset.page;
+            if (page) {
+                showPage(page);
+            }
+        });
+    });
+}
+
+function showPage(pageName) {
+    // Update active nav item
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === pageName) {
+            item.classList.add('active');
+        }
+    });
+
+    // Show selected page, hide others
+    document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+        page.style.display = 'none';
+    });
+
+    const targetPage = document.getElementById(`page-${pageName}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        targetPage.style.display = 'block';
+    }
+
+    // Load page-specific data
+    switch(pageName) {
+        case 'dashboard':
+            loadDashboard();
+            break;
+        case 'analytics':
+            if (typeof loadAnalyticsCharts === 'function') {
+                loadAnalyticsCharts();
+            }
+            break;
+        case 'history':
+            loadFullHistory();
+            break;
+        case 'backups':
+            loadBackups();
+            break;
+        case 'settings':
+            loadRequestLog();
+            break;
+    }
+}
+
+// ===== TABS =====
+function initTabs() {
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            const parent = this.parentElement;
+
+            // Update buttons
+            parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            // Update content
+            const contentId = `tab-${tabName}`;
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+                content.style.display = 'none';
+            });
+
+            const targetContent = document.getElementById(contentId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+                targetContent.style.display = 'block';
+            }
+        });
+    });
+}
+
+// ===== NOTIFICATIONS =====
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+
+    toast.innerHTML = `
+        <i class="fas ${icons[type] || icons.info}"></i>
+        <span>${escapeHtml(message)}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// ===== MODALS =====
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('active');
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('active');
+}
+
+// ===== CONNECTION & CONFIG =====
+function updateConnectionStatus(connected) {
+    isConnected = connected;
+    const statusEl = document.getElementById('connectionStatus');
+    const welcomeBanner = document.getElementById('welcomeBanner');
+
+    if (statusEl) {
+        if (connected) {
+            statusEl.className = 'status-indicator status-connected';
+            statusEl.innerHTML = '<span class="status-dot"></span><span>Connected</span>';
+            startRateLimitMonitor();
+        } else {
+            statusEl.className = 'status-indicator status-disconnected';
+            statusEl.innerHTML = '<span class="status-dot"></span><span>Not Connected</span>';
+            stopRateLimitMonitor();
+            // Reset rate limit display
+            updateRateLimitDisplay({ remaining: 300, reset_in_seconds: 0 });
+        }
+    }
+
+    // Hide/show welcome banner
+    if (welcomeBanner) {
+        welcomeBanner.style.display = connected ? 'none' : 'block';
+    }
+}
+
+function startRateLimitMonitor() {
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    autoRefreshInterval = setInterval(() => {
+        if (isConnected) updateRateLimitStatus();
+    }, 10000); // Every 10 seconds
+}
+
+function stopRateLimitMonitor() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
+async function updateRateLimitStatus() {
+    if (!isConnected) return;
+
+    try {
+        const response = await fetch('/api/request-log');
+        const data = await response.json();
+        if (data.rate_limit) {
+            updateRateLimitDisplay(data.rate_limit);
+        }
+    } catch (error) {
+        // Silently fail
+    }
+}
+
+function updateRateLimitDisplay(rateLimit) {
+    const remaining = rateLimit.remaining !== undefined ? rateLimit.remaining : 300;
+    const percentage = (remaining / 300) * 100;
+
+    const fillEl = document.getElementById('rateLimitFill');
+    const textEl = document.getElementById('rateLimitText');
+
+    if (fillEl) fillEl.style.width = `${percentage}%`;
+    if (textEl) textEl.textContent = `${remaining}/300`;
+}
+
+async function saveConfig() {
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    const universeId = document.getElementById('universeIdInput').value.trim();
+
+    if (!apiKey || !universeId) {
+        showToast('Please enter both API Key and Universe ID', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: apiKey, universe_id: universeId })
+        });
+
+        if (response.ok) {
+            showToast('Configuration saved!', 'success');
+            // Auto-test connection
+            await testConnection();
+        } else {
+            showToast('Failed to save configuration', 'error');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function testConnection() {
+    showToast('Testing connection...', 'info');
+
+    try {
+        const response = await fetch('/api/test-connection', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            showToast('Connected successfully!', 'success');
+            updateConnectionStatus(true);
+            if (data.rate_limit) {
+                updateRateLimitDisplay(data.rate_limit);
+            }
+        } else {
+            showToast(`Connection failed: ${data.message}`, 'error');
+            updateConnectionStatus(false);
+        }
+    } catch (error) {
+        showToast(`Connection error: ${error.message}`, 'error');
+        updateConnectionStatus(false);
+    }
+}
+
+// ===== DASHBOARD =====
+async function loadDashboard() {
+    await loadStats();
+    await loadHistory();
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+
+        const ops = document.getElementById('statOperations');
+        const success = document.getElementById('statSuccess');
+        const failed = document.getElementById('statFailed');
+        const backups = document.getElementById('statBackups');
+
+        if (ops) ops.textContent = data.total_operations || 0;
+        if (success) success.textContent = data.successful_operations || 0;
+        if (failed) failed.textContent = data.failed_operations || 0;
+        if (backups) backups.textContent = data.total_backups || 0;
+
+        if (data.rate_limit && isConnected) {
+            updateRateLimitDisplay(data.rate_limit);
+        }
+    } catch (error) {
+        console.error('Failed to load stats:', error);
+    }
+}
+
+// ===== DATASTORES =====
+async function loadAllDatastores() {
+    if (!isConnected) {
+        showToast('Please configure your API key first', 'warning');
+        showPage('settings');
+        return;
+    }
+
+    showToast('Loading datastores...', 'info');
+
+    try {
+        const response = await fetch('/api/datastores/all');
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        const tbody = document.getElementById('datastoreList');
+        if (!tbody) return;
+
+        if (!data.datastores || data.datastores.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="empty-state">
+                        <i class="fas fa-database"></i>
+                        <p>No datastores found</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = data.datastores.map(ds => `
+            <tr>
+                <td><strong>${escapeHtml(ds.name)}</strong></td>
+                <td>${ds.createdTime || 'N/A'}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="exploreDatastore('${escapeHtml(ds.name)}')">
+                        <i class="fas fa-folder-open"></i> Explore
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="quickExport('${escapeHtml(ds.name)}')">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        showToast(`Loaded ${data.count} datastores`, 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+function exploreDatastore(name) {
+    document.getElementById('explorerDatastore').value = name;
+    showPage('explorer');
+    loadEntries();
+}
+
+async function quickExport(name) {
+    document.getElementById('exportDatastore').value = name;
+    await exportDatastore();
+}
+
+// ===== ENTRIES =====
+async function loadEntries() {
+    if (!isConnected) {
+        showToast('Please configure your API key first', 'warning');
+        return;
+    }
+
+    const datastoreName = document.getElementById('explorerDatastore').value.trim();
+    const scope = document.getElementById('explorerScope').value.trim() || 'global';
+    const prefix = document.getElementById('explorerPrefix').value.trim();
+
+    if (!datastoreName) {
+        showToast('Please enter a datastore name', 'error');
+        return;
+    }
+
+    currentDatastore = datastoreName;
+    currentScope = scope;
+
+    showToast('Loading entries...', 'info');
+
+    try {
+        const params = new URLSearchParams({
+            datastore: datastoreName,
+            scope: scope,
+            prefix: prefix
+        });
+
+        const response = await fetch(`/api/entries?${params}`);
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        displayEntries(data.keys || []);
+        showToast(`Loaded ${(data.keys || []).length} entries`, 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function loadAllEntriesBtn() {
+    if (!isConnected) {
+        showToast('Please configure your API key first', 'warning');
+        return;
+    }
+
+    const datastoreName = document.getElementById('explorerDatastore').value.trim();
+    const scope = document.getElementById('explorerScope').value.trim() || 'global';
+    const prefix = document.getElementById('explorerPrefix').value.trim();
+
+    if (!datastoreName) {
+        showToast('Please enter a datastore name', 'error');
+        return;
+    }
+
+    currentDatastore = datastoreName;
+    currentScope = scope;
+
+    showToast('Loading all entries (may take a while)...', 'info');
+
+    try {
+        const params = new URLSearchParams({
+            datastore: datastoreName,
+            scope: scope,
+            prefix: prefix
+        });
+
+        const response = await fetch(`/api/entries/all?${params}`);
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        displayEntries(data.keys || []);
+        showToast(`Loaded ${data.count} entries`, 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+function displayEntries(entries) {
+    selectedEntries.clear();
+
+    const card = document.getElementById('entriesCard');
+    const countEl = document.getElementById('entryCount');
+    const tbody = document.getElementById('entriesList');
+
+    if (card) card.style.display = 'block';
+    if (countEl) countEl.textContent = entries.length;
+    if (!tbody) return;
+
+    if (entries.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No entries found</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = entries.map(entry => `
+        <tr>
+            <td><input type="checkbox" class="entry-checkbox" value="${escapeHtml(entry.key)}" onchange="toggleEntrySelection('${escapeHtml(entry.key)}')"></td>
+            <td><code>${escapeHtml(entry.key)}</code></td>
+            <td><span class="badge badge-info">${entry.scope || currentScope}</span></td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="viewEntry('${escapeHtml(entry.key)}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteEntry('${escapeHtml(entry.key)}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function toggleEntrySelection(key) {
+    if (selectedEntries.has(key)) {
+        selectedEntries.delete(key);
+    } else {
+        selectedEntries.add(key);
+    }
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAllEntries');
+    if (!selectAll) return;
+
+    const checked = selectAll.checked;
+    document.querySelectorAll('.entry-checkbox').forEach(cb => {
+        cb.checked = checked;
+        if (checked) {
+            selectedEntries.add(cb.value);
+        } else {
+            selectedEntries.delete(cb.value);
+        }
+    });
+}
+
+async function viewEntry(key) {
+    currentKey = key;
+    showToast('Loading entry...', 'info');
+
+    try {
+        const params = new URLSearchParams({
+            datastore: currentDatastore,
+            key: key,
+            scope: currentScope
+        });
+
+        const response = await fetch(`/api/entry?${params}`);
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        // Show details card
+        const detailsCard = document.getElementById('entryDetailsCard');
+        if (detailsCard) detailsCard.style.display = 'block';
+
+        // Update key name
+        const keyEl = document.getElementById('currentEntryKey');
+        if (keyEl) keyEl.textContent = key;
+
+        // Update editor
+        const editor = document.getElementById('entryValueEditor');
+        if (editor) editor.value = JSON.stringify(data.value, null, 2);
+
+        // Update tree view
+        const treeView = document.getElementById('treeView');
+        if (treeView) treeView.innerHTML = jsonToTreeView(data.value);
+
+        // Update metadata
+        const versionEl = document.getElementById('entryVersion');
+        const createdEl = document.getElementById('entryCreated');
+        const updatedEl = document.getElementById('entryUpdated');
+        const userIdsEl = document.getElementById('entryUserIds');
+        const attrsEl = document.getElementById('entryAttributes');
+
+        if (versionEl) versionEl.value = data.metadata.version || '';
+        if (createdEl) createdEl.value = data.metadata.created_time || '';
+        if (updatedEl) updatedEl.value = data.metadata.updated_time || '';
+        if (userIdsEl) userIdsEl.value = JSON.stringify(data.metadata.user_ids || []);
+        if (attrsEl) attrsEl.value = JSON.stringify(data.metadata.attributes || {}, null, 2);
+
+        showToast('Entry loaded', 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function saveEntry() {
+    try {
+        const valueStr = document.getElementById('entryValueEditor').value;
+        const userIdsStr = document.getElementById('entryUserIds').value || '[]';
+        const attrsStr = document.getElementById('entryAttributes').value || '{}';
+
+        const value = JSON.parse(valueStr);
+        const userIds = JSON.parse(userIdsStr);
+        const attributes = JSON.parse(attrsStr);
+
+        const params = new URLSearchParams({
+            datastore: currentDatastore,
+            key: currentKey,
+            scope: currentScope
+        });
+
+        const response = await fetch(`/api/entry?${params}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value, user_ids: userIds, attributes })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        const versionEl = document.getElementById('entryVersion');
+        const updatedEl = document.getElementById('entryUpdated');
+        if (versionEl) versionEl.value = data.version || '';
+        if (updatedEl) updatedEl.value = data.updated_time || '';
+
+        showToast('Entry saved successfully!', 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function deleteEntry(key) {
+    if (!confirm(`Are you sure you want to delete "${key}"?`)) return;
+
+    try {
+        const params = new URLSearchParams({
+            datastore: currentDatastore,
+            key: key,
+            scope: currentScope
+        });
+
+        const response = await fetch(`/api/entry?${params}`, { method: 'DELETE' });
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast(`Entry "${key}" deleted`, 'success');
+        loadEntries();
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function bulkDeleteSelected() {
+    if (selectedEntries.size === 0) {
+        showToast('No entries selected', 'warning');
+        return;
+    }
+
+    if (!confirm(`Delete ${selectedEntries.size} entries?`)) return;
+
+    try {
+        const response = await fetch('/api/bulk/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                datastore: currentDatastore,
+                keys: Array.from(selectedEntries),
+                scope: currentScope
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast(`Deleted ${data.success_count} entries`, 'success');
+        loadEntries();
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// ===== CREATE/INCREMENT ENTRY =====
+function createEntryModal() {
+    openModal('createEntryModal');
+}
+
+async function createNewEntry() {
+    const key = document.getElementById('newEntryKey').value.trim();
+    const valueStr = document.getElementById('newEntryValue').value.trim();
+
+    if (!key || !valueStr) {
+        showToast('Please enter key and value', 'error');
+        return;
+    }
+
+    try {
+        const value = JSON.parse(valueStr);
+        const params = new URLSearchParams({
+            datastore: currentDatastore,
+            key: key,
+            scope: currentScope
+        });
+
+        const response = await fetch(`/api/entry?${params}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value, exclusive_create: true })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast('Entry created!', 'success');
+        closeModal('createEntryModal');
+        loadEntries();
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+function incrementEntryModal() {
+    openModal('incrementModal');
+}
+
+async function incrementEntry() {
+    const incrementBy = parseFloat(document.getElementById('incrementValue').value);
+
+    try {
+        const params = new URLSearchParams({
+            datastore: currentDatastore,
+            key: currentKey,
+            scope: currentScope
+        });
+
+        const response = await fetch(`/api/entry/increment?${params}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ increment_by: incrementBy })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast(`New value: ${data.value}`, 'success');
+        closeModal('incrementModal');
+        viewEntry(currentKey);
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// ===== VERSIONS =====
+async function viewVersions() {
+    showToast('Loading versions...', 'info');
+
+    try {
+        const params = new URLSearchParams({
+            datastore: currentDatastore,
+            key: currentKey,
+            scope: currentScope
+        });
+
+        const response = await fetch(`/api/versions?${params}`);
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        const versions = data.versions || [];
+        const listEl = document.getElementById('versionsList');
+
+        if (!listEl) return;
+
+        if (versions.length === 0) {
+            listEl.innerHTML = '<p class="empty-state">No versions found</p>';
+        } else {
+            listEl.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Version</th><th>Created</th><th>Deleted</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            ${versions.map(v => `
+                                <tr>
+                                    <td><code>${v.version}</code></td>
+                                    <td>${v.createdTime || ''}</td>
+                                    <td>${v.deleted ? '<span class="badge badge-danger">Yes</span>' : '<span class="badge badge-success">No</span>'}</td>
+                                    <td><button class="btn btn-sm btn-secondary" onclick="restoreVersion('${v.version}')"><i class="fas fa-undo"></i> Restore</button></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        openModal('versionModal');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function restoreVersion(version) {
+    try {
+        const params = new URLSearchParams({
+            datastore: currentDatastore,
+            key: currentKey,
+            version: version,
+            scope: currentScope
+        });
+
+        const response = await fetch(`/api/version?${params}`);
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        const editor = document.getElementById('entryValueEditor');
+        if (editor) editor.value = JSON.stringify(data.value, null, 2);
+
+        showToast('Version loaded. Click "Save" to restore.', 'info');
+        closeModal('versionModal');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// ===== BULK OPERATIONS =====
+async function exportDatastore() {
+    const datastoreName = document.getElementById('exportDatastore').value.trim();
+    const scope = document.getElementById('exportScope').value.trim() || 'global';
+    const includeMetadata = document.getElementById('exportMetadata').checked;
+
+    if (!datastoreName) {
+        showToast('Please enter datastore name', 'error');
+        return;
+    }
+
+    showToast('Exporting... (this may take a while)', 'info');
+
+    try {
+        const response = await fetch('/api/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                datastore: datastoreName,
+                scope: scope,
+                include_metadata: includeMetadata
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast(`Exported ${data.entry_count} entries!`, 'success');
+
+        // Download file
+        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${datastoreName}_export.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function importDatastore() {
+    const datastoreName = document.getElementById('importDatastore').value.trim();
+    const scope = document.getElementById('importScope').value.trim() || 'global';
+    const dataStr = document.getElementById('importData').value.trim();
+    const overwrite = document.getElementById('importOverwrite').checked;
+
+    if (!datastoreName || !dataStr) {
+        showToast('Please enter datastore and data', 'error');
+        return;
+    }
+
+    try {
+        const entries = JSON.parse(dataStr);
+        showToast('Importing...', 'info');
+
+        const response = await fetch('/api/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                datastore: datastoreName,
+                entries: entries,
+                scope: scope,
+                overwrite: overwrite
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast(`Imported: ${data.success} ok, ${data.failed} failed, ${data.skipped} skipped`, 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function bulkDelete() {
+    const datastoreName = document.getElementById('bulkDeleteDatastore').value.trim();
+    const keysStr = document.getElementById('bulkDeleteKeys').value.trim();
+
+    if (!datastoreName || !keysStr) {
+        showToast('Please enter datastore and keys', 'error');
+        return;
+    }
+
+    const keys = keysStr.split('\n').map(k => k.trim()).filter(k => k);
+
+    if (!confirm(`Delete ${keys.length} keys?`)) return;
+
+    showToast('Deleting...', 'info');
+
+    try {
+        const response = await fetch('/api/bulk/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                datastore: datastoreName,
+                keys: keys,
+                scope: 'global'
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(`Error: ${data.error}`, 'error');
+            return;
+        }
+
+        showToast(`Deleted ${data.success_count}/${keys.length} keys`, 'success');
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// ===== HISTORY =====
+async function loadHistory() {
+    try {
+        const response = await fetch('/api/history?limit=10');
+        const data = await response.json();
+
+        const tbody = document.getElementById('recentHistoryTable');
+        if (!tbody) return;
+
+        const history = data.history || [];
+
+        if (history.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No operations yet</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = history.map(h => `
+            <tr>
+                <td>${new Date(h.timestamp).toLocaleString()}</td>
+                <td><span class="badge badge-info">${h.operation_type}</span></td>
+                <td>${escapeHtml(h.datastore_name || '-')}</td>
+                <td><code>${escapeHtml(h.key_name || '-')}</code></td>
+                <td>${h.success ? '<span class="badge badge-success">OK</span>' : '<span class="badge badge-danger">FAIL</span>'}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load history:', error);
+    }
+}
+
+async function loadFullHistory() {
+    try {
+        const response = await fetch('/api/history?limit=100');
+        const data = await response.json();
+
+        const tbody = document.getElementById('fullHistoryTable');
+        if (!tbody) return;
+
+        const history = data.history || [];
+
+        if (history.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No operations yet</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = history.map(h => `
+            <tr>
+                <td>${new Date(h.timestamp).toLocaleString()}</td>
+                <td><span class="badge badge-info">${h.operation_type}</span></td>
+                <td>${escapeHtml(h.datastore_name || '-')}</td>
+                <td><code>${escapeHtml(h.key_name || '-')}</code></td>
+                <td><small>${escapeHtml((h.error_message || '-').substring(0, 50))}</small></td>
+                <td>${h.success ? '<span class="badge badge-success">OK</span>' : '<span class="badge badge-danger">FAIL</span>'}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load history:', error);
+    }
+}
+
+// ===== BACKUPS =====
+async function loadBackups() {
+    try {
+        const response = await fetch('/api/backups');
+        const data = await response.json();
+
+        const tbody = document.getElementById('backupsList');
+        if (!tbody) return;
+
+        const backups = data.backups || [];
+
+        if (backups.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No backups yet</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = backups.map(b => `
+            <tr>
+                <td>${new Date(b.timestamp).toLocaleString()}</td>
+                <td>${escapeHtml(b.datastore_name)}</td>
+                <td>${b.entry_count}</td>
+                <td><code>${escapeHtml(b.backup_file)}</code></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load backups:', error);
+    }
+}
+
+// ===== REQUEST LOG =====
+async function loadRequestLog() {
+    try {
+        const response = await fetch('/api/request-log');
+        const data = await response.json();
+
+        const tbody = document.getElementById('requestLogTable');
+        if (!tbody) return;
+
+        const logs = data.log || [];
+
+        if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No requests logged</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = logs.reverse().map(l => {
+            const statusClass = l.status >= 200 && l.status < 300 ? 'badge-success' :
+                               l.status >= 400 ? 'badge-danger' : 'badge-warning';
+            return `
+                <tr>
+                    <td>${new Date(l.timestamp).toLocaleTimeString()}</td>
+                    <td><span class="badge badge-info">${l.method}</span></td>
+                    <td><small>${escapeHtml(l.url.replace('https://apis.roblox.com', ''))}</small></td>
+                    <td><span class="badge ${statusClass}">${l.status}</span></td>
+                    <td>${l.response_time_ms} ms</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Failed to load request log:', error);
+    }
+}
+
+// ===== UTILITIES =====
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+function jsonToTreeView(obj, indent = 0) {
+    if (obj === null) return '<span class="tree-null">null</span>';
+    if (typeof obj === 'string') return `<span class="tree-string">"${escapeHtml(obj)}"</span>`;
+    if (typeof obj === 'number') return `<span class="tree-number">${obj}</span>`;
+    if (typeof obj === 'boolean') return `<span class="tree-boolean">${obj}</span>`;
+
+    if (Array.isArray(obj)) {
+        if (obj.length === 0) return '[]';
+        return '[<br>' + obj.map((item, i) =>
+            `<div style="padding-left: ${indent + 20}px;"><span class="tree-key">[${i}]:</span> ${jsonToTreeView(item, indent + 20)}</div>`
+        ).join('') + ']';
+    }
+
+    if (typeof obj === 'object') {
+        const keys = Object.keys(obj);
+        if (keys.length === 0) return '{}';
+        return '{<br>' + keys.map(key =>
+            `<div style="padding-left: ${indent + 20}px;"><span class="tree-key">"${escapeHtml(key)}":</span> ${jsonToTreeView(obj[key], indent + 20)}</div>`
+        ).join('') + '}';
+    }
+
+    return String(obj);
+}
+
+function exportModal() {
+    showPage('bulk');
+    document.getElementById('exportDatastore').focus();
+}
+
+function importModal() {
+    showPage('bulk');
+    document.getElementById('importDatastore').focus();
+}

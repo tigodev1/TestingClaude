@@ -176,39 +176,39 @@ GET  /proxy/analytics/recent                  - Recent requests
 
 <div class="grid-2" style="gap:24px;">
 <div>
-<div class="card" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border:none;">
+<div class="card" style="background:#1a1a1a; border:1px solid #333;">
 <div class="card-body">
 <div class="form-group">
-<label class="form-label" style="color:white; font-weight:600;">✨ Your Prompt</label>
-<textarea id="imagePrompt" class="form-input font-mono" rows="4" placeholder="a photorealistic portrait of a cat wearing sunglasses, studio lighting" style="background:rgba(255,255,255,0.95); border:none;"></textarea>
+<label class="form-label" style="font-weight:600;">✨ Your Prompt</label>
+<textarea id="imagePrompt" class="form-input font-mono" rows="4" placeholder="a photorealistic portrait of a cat wearing sunglasses, studio lighting"></textarea>
 </div>
 <div class="grid-3 mb-3">
 <div class="form-group">
-<label class="form-label" style="color:white;">Model</label>
-<select id="imageModel" class="form-input" style="background:rgba(255,255,255,0.95); border:none;">
+<label class="form-label">Model</label>
+<select id="imageModel" class="form-input">
 <option value="flux-realism" selected>Flux Realism (Best)</option>
 <option value="flux">Flux (Artistic)</option>
 <option value="turbo">Turbo (Fast)</option>
 </select>
 </div>
 <div class="form-group">
-<label class="form-label" style="color:white;">Width</label>
-<input type="number" id="imageWidth" class="form-input" value="1024" min="256" max="2048" step="64" style="background:rgba(255,255,255,0.95); border:none;">
+<label class="form-label">Width</label>
+<input type="number" id="imageWidth" class="form-input" value="1024" min="256" max="2048" step="64">
 </div>
 <div class="form-group">
-<label class="form-label" style="color:white;">Height</label>
-<input type="number" id="imageHeight" class="form-input" value="1024" min="256" max="2048" step="64" style="background:rgba(255,255,255,0.95); border:none;">
+<label class="form-label">Height</label>
+<input type="number" id="imageHeight" class="form-input" value="1024" min="256" max="2048" step="64">
 </div>
 </div>
 <div class="form-group">
-<label class="form-label" style="color:white;">Seed (for consistency)</label>
-<input type="number" id="imageSeed" class="form-input" value="42069" style="background:rgba(255,255,255,0.95); border:none;">
-<small style="opacity:0.9;">Same seed + prompt = same image</small>
+<label class="form-label">Seed (for consistency)</label>
+<input type="number" id="imageSeed" class="form-input" value="42069">
+<small style="opacity:0.7;">Same seed + prompt = same image</small>
 </div>
 <div class="flex gap-2">
-<button class="btn btn-primary" onclick="generateImage()" style="background:white; color:#667eea; font-weight:600; flex:1;"><i class="fas fa-magic"></i> Generate Image</button>
-<button class="btn btn-secondary" onclick="downloadGeneratedImage()" id="downloadImageBtn" style="display:none; background:rgba(255,255,255,0.2); border:none; color:white;"><i class="fas fa-download"></i></button>
-<button class="btn btn-secondary" onclick="copyImageURL()" id="copyImageBtn" style="display:none; background:rgba(255,255,255,0.2); border:none; color:white;"><i class="fas fa-copy"></i></button>
+<button class="btn btn-primary" onclick="generateImage()" style="flex:1;"><i class="fas fa-magic"></i> Generate Image</button>
+<button class="btn btn-secondary" onclick="downloadGeneratedImage()" id="downloadImageBtn" style="display:none;"><i class="fas fa-download"></i></button>
+<button class="btn btn-secondary" onclick="copyImageURL()" id="copyImageBtn" style="display:none;"><i class="fas fa-copy"></i></button>
 </div>
 </div>
 </div>
@@ -264,30 +264,30 @@ GET  /proxy/analytics/recent                  - Recent requests
     <div class="grid-2" style="gap:24px; align-items:start;">
         <!-- Left Column: Chat Interface -->
         <div style="display:flex; flex-direction:column; gap:16px;">
-            <div class="card" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white;">
-                <div class="card-header" style="border-bottom:1px solid rgba(255,255,255,0.2);">
+            <div class="card" style="background:#1a1a1a; border:1px solid #333;">
+                <div class="card-header">
                     <h3 class="card-title">Conversation</h3>
                     <div class="flex gap-2">
-                        <select id="chatModel" class="form-input" style="width:auto; background:rgba(255,255,255,0.9); color:#333;">
+                        <select id="chatModel" class="form-input" style="width:auto;">
                             <option value="openai">OpenAI GPT</option>
                             <option value="mistral">Mistral</option>
                             <option value="claude">Claude (Vision)</option>
                         </select>
-                        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3);" onclick="saveCurrentChat()">
+                        <button class="btn btn-sm btn-secondary" onclick="saveCurrentChat()">
                             <i class="fas fa-save"></i> Save
                         </button>
-                        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3);" onclick="clearChat()">
+                        <button class="btn btn-sm btn-danger" onclick="clearChat()">
                             <i class="fas fa-trash"></i> Clear
                         </button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div id="chatMessages" style="min-height:400px; max-height:500px; overflow-y:auto; background:rgba(255,255,255,0.95); padding:16px; border-radius:8px; margin-bottom:16px;">
+                    <div id="chatMessages" style="min-height:400px; max-height:500px; overflow-y:auto; background:var(--bg-surface); padding:16px; border-radius:8px; margin-bottom:16px;">
                         <div class="text-center text-muted" style="padding:40px 0;">Start a conversation...</div>
                     </div>
                     <div class="flex gap-2">
-                        <textarea id="chatInput" class="form-input font-mono" rows="2" placeholder="Type your message..." style="background:rgba(255,255,255,0.9);" onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-                        <button class="btn" style="align-self:flex-end; background:white; color:#667eea; font-weight:bold;" onclick="sendMessage()">
+                        <textarea id="chatInput" class="form-input font-mono" rows="2" placeholder="Type your message..." onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+                        <button class="btn btn-primary" style="align-self:flex-end;" onclick="sendMessage()">
                             <i class="fas fa-paper-plane"></i> Send
                         </button>
                     </div>

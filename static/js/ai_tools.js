@@ -272,9 +272,9 @@ function addMessageToChat(role, content, isError = false) {
         padding: 16px;
         border-radius: 12px;
         ${role === 'user'
-            ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-left: 15%; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);'
+            ? 'background: #2a2a2a; color: white; margin-left: 15%; border: 1px solid #444; box-shadow: 0 2px 8px rgba(0,0,0,0.3);'
             : 'background: var(--bg-surface); margin-right: 15%; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1);'}
-        ${isError ? 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; margin: 0;' : ''}
+        ${isError ? 'background: #dc3545; color: white; margin: 0; border: 1px solid #c82333;' : ''}
     `;
 
     const header = document.createElement('div');

@@ -2721,31 +2721,29 @@ def ai_chat():
     try:
         # Prepare the request to Pollinations AI
         headers = {
-            'Content-Type': 'application/json',
-            'Referer': POLLINATIONS_REFERER
+            'Content-Type': 'application/json'
         }
 
-        # Build the request payload
+        # Build the request payload in OpenAI-compatible format
         payload = {
-            'messages': messages,
             'model': model,
+            'messages': messages,
             'temperature': temperature,
             'max_tokens': max_tokens
         }
 
-        if system_prompt:
-            payload['system'] = system_prompt
-
-        # Call Pollinations AI
+        # Call Pollinations AI using the /openai endpoint
         response = requests.post(
-            'https://text.pollinations.ai/',
+            'https://text.pollinations.ai/openai',
             json=payload,
             headers=headers,
             timeout=30
         )
 
         if response.status_code == 200:
-            ai_response = response.text
+            result = response.json()
+            # Extract the response from the OpenAI-compatible format
+            ai_response = result.get('choices', [{}])[0].get('message', {}).get('content', '')
             return jsonify({
                 'success': True,
                 'response': ai_response
@@ -2770,11 +2768,10 @@ def ai_vision():
     try:
         # Prepare the vision request
         headers = {
-            'Content-Type': 'application/json',
-            'Referer': POLLINATIONS_REFERER
+            'Content-Type': 'application/json'
         }
 
-        # Build messages for vision model
+        # Build messages for vision model in OpenAI-compatible format
         messages = [
             {
                 'role': 'user',
@@ -2786,21 +2783,23 @@ def ai_vision():
         ]
 
         payload = {
+            'model': 'openai',  # Use openai model for vision
             'messages': messages,
-            'model': 'claude',  # Claude supports vision
             'max_tokens': 1000
         }
 
-        # Call Pollinations AI
+        # Call Pollinations AI using the /openai endpoint
         response = requests.post(
-            'https://text.pollinations.ai/',
+            'https://text.pollinations.ai/openai',
             json=payload,
             headers=headers,
             timeout=30
         )
 
         if response.status_code == 200:
-            analysis = response.text
+            result = response.json()
+            # Extract the analysis from the OpenAI-compatible format
+            analysis = result.get('choices', [{}])[0].get('message', {}).get('content', '')
             return jsonify({
                 'success': True,
                 'analysis': analysis
@@ -2828,8 +2827,8 @@ def ai_text_to_speech():
         from urllib.parse import quote
         encoded_text = quote(text)
 
-        # Construct the TTS URL
-        audio_url = f"https://text.pollinations.ai/openai/audio/speech?input={encoded_text}&voice={voice}&speed={speed}"
+        # Construct the TTS URL using the correct format
+        audio_url = f"https://text.pollinations.ai/{encoded_text}?model=openai-audio&voice={voice}"
 
         return jsonify({
             'success': True,

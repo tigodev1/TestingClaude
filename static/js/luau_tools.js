@@ -5,13 +5,32 @@
 let obfuscationSettings = {
     renameVariables: true,
     encryptStrings: true,
-    controlFlow: true,
+    controlFlow: false, // Disabled by default - can cause issues
     deadCode: true,
     encodeNumbers: true,
-    antiTamper: true,
-    intensity: 'heavy', // light, medium, heavy
+    antiTamper: false,
+    intensity: 'medium', // light, medium, heavy
     customKey: ''
 };
+
+// Reserved Lua/Luau keywords and built-in functions that should NOT be renamed
+const RESERVED_WORDS = new Set([
+    'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function',
+    'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then',
+    'true', 'until', 'while', 'continue',
+    // Roblox globals
+    'game', 'workspace', 'script', 'print', 'warn', 'wait', 'task', 'spawn',
+    'delay', 'tick', 'time', 'typeof', 'type', 'pairs', 'ipairs', 'next',
+    'select', 'unpack', 'table', 'math', 'string', 'coroutine', 'bit32',
+    'utf8', 'os', 'debug', 'Instance', 'Vector2', 'Vector3', 'CFrame',
+    'UDim', 'UDim2', 'Color3', 'BrickColor', 'Region3', 'Rect', 'Ray',
+    'Enum', 'Axes', 'Faces', 'Region3int16', 'Vector2int16', 'Vector3int16',
+    'NumberRange', 'NumberSequence', 'ColorSequence', 'PhysicalProperties',
+    'Random', 'DateTime', 'elapsedTime', 'require', 'getfenv', 'setfenv',
+    'loadstring', 'newproxy', 'tonumber', 'tostring', 'pcall', 'xpcall',
+    'error', 'assert', 'collectgarbage', 'gcinfo', 'getmetatable', 'setmetatable',
+    'rawget', 'rawset', 'rawequal', 'rawlen'
+]);
 
 function updateObfuscationSettings() {
     obfuscationSettings.renameVariables = document.getElementById('obfRenameVars').checked;
@@ -25,29 +44,17 @@ function updateObfuscationSettings() {
 }
 
 function generateRandomName(prefix = 'l') {
-    const chars = 'IlO0'; // Confusing characters
-    const length = obfuscationSettings.intensity === 'heavy' ? 8 : obfuscationSettings.intensity === 'medium' ? 6 : 4;
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const confusing = 'IlO0_';
+    const useConfusing = obfuscationSettings.intensity === 'heavy';
+    const charSet = useConfusing ? confusing : chars;
+    const length = obfuscationSettings.intensity === 'heavy' ? 12 : obfuscationSettings.intensity === 'medium' ? 8 : 6;
+
     let name = prefix + '_';
     for (let i = 0; i < length; i++) {
-        name += chars[Math.floor(Math.random() * chars.length)];
+        name += charSet[Math.floor(Math.random() * charSet.length)];
     }
     return name;
-}
-
-function encryptString(str, key) {
-    // XOR encryption with base64
-    const keyStr = key || obfuscationSettings.customKey || 'default_key';
-    let encrypted = '';
-    for (let i = 0; i < str.length; i++) {
-        encrypted += String.fromCharCode(str.charCodeAt(i) ^ keyStr.charCodeAt(i % keyStr.length));
-    }
-    return btoa(encrypted);
-}
-
-function generateStringDecryptor(key) {
-    const keyStr = key || obfuscationSettings.customKey || 'default_key';
-    const keyEncoded = Array.from(keyStr).map(c => c.charCodeAt(0)).join(',');
-    return `local function _D(s) local k={${keyEncoded}} local r="" local d=game:GetService("HttpService"):JSONDecode(game:GetService("HttpService"):GetAsync("https://raw.githubusercontent.com/base64/lua/master/base64.lua")) for i=1,#s do r=r..string.char(bit32.bxor(s:byte(i),k[(i-1)%#k+1])) end return r end`;
 }
 
 function obfuscateCode() {
@@ -64,76 +71,112 @@ function obfuscateCode() {
         let obfuscated = input;
         const varMap = new Map();
 
-        // Step 1: Rename variables and functions
+        // Step 1: Rename local variables and function parameters
         if (obfuscationSettings.renameVariables) {
-            // Find local variables
-            const localPattern = /local\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
+            // Find all local variables (but not reserved words)
+            const localPattern = /local\s+function\s+([a-zA-Z_][a-zA-Z0-9_]*)|local\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
             let match;
-            while ((match = localPattern.exec(input)) !== null) {
-                if (!varMap.has(match[1])) {
-                    varMap.set(match[1], generateRandomName());
+            const tempInput = input; // Use original input for pattern matching
+
+            while ((match = localPattern.exec(tempInput)) !== null) {
+                const varName = match[1] || match[2];
+                if (varName && !RESERVED_WORDS.has(varName) && !varMap.has(varName)) {
+                    varMap.set(varName, generateRandomName('var'));
                 }
             }
 
-            // Replace variables
+            // Find function parameters
+            const paramPattern = /function\s*\(([^)]*)\)/g;
+            while ((match = paramPattern.exec(tempInput)) !== null) {
+                const params = match[1].split(',').map(p => p.trim());
+                params.forEach(param => {
+                    if (param && !RESERVED_WORDS.has(param) && !varMap.has(param)) {
+                        varMap.set(param, generateRandomName('arg'));
+                    }
+                });
+            }
+
+            // Replace variables (use word boundaries to avoid partial matches)
             varMap.forEach((newName, oldName) => {
                 const regex = new RegExp(`\\b${oldName}\\b`, 'g');
                 obfuscated = obfuscated.replace(regex, newName);
             });
         }
 
-        // Step 2: Encrypt strings
+        // Step 2: Encrypt strings (simplified and working version)
         if (obfuscationSettings.encryptStrings) {
-            const stringPattern = /"([^"]*)"|'([^']*)'/g;
             const strings = [];
-            obfuscated = obfuscated.replace(stringPattern, (match, dq, sq) => {
-                const str = dq || sq;
-                const encrypted = encryptString(str);
-                strings.push(encrypted);
-                return `_D("${encrypted}")`;
+            let stringIndex = 0;
+
+            // Simple string encryption using character codes
+            obfuscated = obfuscated.replace(/"([^"]*)"/g, (match, str) => {
+                if (str.length === 0) return '""';
+                const charCodes = Array.from(str).map(c => c.charCodeAt(0));
+                strings.push(charCodes);
+                return `_S(${stringIndex++})`;
+            });
+
+            obfuscated = obfuscated.replace(/'([^']*)'/g, (match, str) => {
+                if (str.length === 0) return "''";
+                const charCodes = Array.from(str).map(c => c.charCodeAt(0));
+                strings.push(charCodes);
+                return `_S(${stringIndex++})`;
             });
 
             if (strings.length > 0) {
-                const decryptor = `local function _D(e)local k='${obfuscationSettings.customKey||'k'}'local d=''local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'e=e:gsub('[^'..b..'=]','')local a=''for c in e:gmatch'.'do a=a..(({[0]='000000',[1]='000001',[2]='000010',[3]='000011',[4]='000100',[5]='000101',[6]='000110',[7]='000111',[8]='001000',[9]='001001',A='001010',B='001011',C='001100',D='001101',E='001110',F='001111',G='010000',H='010001',I='010010',J='010011',K='010100',L='010101',M='010110',N='010111',O='011000',P='011001',Q='011010',R='011011',S='011100',T='011101',U='011110',V='011111',W='100000',X='100001',Y='100010',Z='100011',a='100100',b='100101',c='100110',d='100111',e='101000',f='101001',g='101010',h='101011',i='101100',j='101101',k='101110',l='101111',m='110000',n='110001',o='110010',p='110011',q='110100',r='110101',s='110110',t='110111',u='111000',v='111001',w='111010',x='111011',y='111100',z='111101',['+']='111110',['/']='111111'})[c]or'')end for i=1,#a,8 do local byte=tonumber(a:sub(i,i+7),2)if byte then d=d..string.char(bit32.bxor(byte,k:byte((i-1)/8%#k+1)))end end return d end\n`;
+                // Create string table
+                const stringTable = strings.map((codes, idx) => {
+                    return `[${idx}]={${codes.join(',')}}`;
+                }).join(',');
+
+                const decryptor = `local _T={${stringTable}}
+local function _S(i)
+    local t=_T[i]
+    local s=""
+    for j=1,#t do
+        s=s..string.char(t[j])
+    end
+    return s
+end
+`;
                 obfuscated = decryptor + obfuscated;
             }
         }
 
-        // Step 3: Encode numbers
+        // Step 3: Encode numbers (carefully to avoid breaking syntax)
         if (obfuscationSettings.encodeNumbers) {
-            obfuscated = obfuscated.replace(/\b(\d+)\b/g, (match) => {
+            // Only encode standalone numbers, not those in strings or after 0x
+            obfuscated = obfuscated.replace(/(?<!0x|\w)(\d+)(?!\w|x)/g, (match) => {
                 const num = parseInt(match);
-                if (num === 0) return '0';
+                if (num === 0 || num === 1) return match; // Don't encode 0 and 1
+
                 const encodings = [
-                    `(${num}+0)`,
-                    `(${Math.floor(num/2)}*2${num%2?'+1':''})`,
-                    `(0x${num.toString(16)})`,
-                    `tonumber("${num}")`
+                    `(${num})`, // Just wrap in parentheses
+                    `(0x${num.toString(16)})`, // Hexadecimal
                 ];
+
+                // Add more complex encodings for higher intensity
+                if (obfuscationSettings.intensity !== 'light') {
+                    if (num % 2 === 0) {
+                        encodings.push(`(${num/2}*2)`);
+                    }
+                    if (num > 10) {
+                        encodings.push(`(${num-5}+5)`);
+                    }
+                }
+
                 return encodings[Math.floor(Math.random() * encodings.length)];
             });
         }
 
-        // Step 4: Control flow obfuscation
-        if (obfuscationSettings.controlFlow) {
-            // Add random control flow
-            const lines = obfuscated.split('\n');
-            const controlFlowVar = generateRandomName('cf');
-            obfuscated = `local ${controlFlowVar}=true\n` + lines.map((line, i) => {
-                if (line.trim() && Math.random() > 0.7 && obfuscationSettings.intensity === 'heavy') {
-                    return `if ${controlFlowVar} then ${line} end`;
-                }
-                return line;
-            }).join('\n');
-        }
-
-        // Step 5: Inject dead code
+        // Step 4: Inject dead code (safe, non-breaking)
         if (obfuscationSettings.deadCode) {
             const deadCodeSnippets = [
-                `local ${generateRandomName('dc')}=function()return nil end`,
-                `local ${generateRandomName('dc')}=math.random(1,100)`,
-                `local ${generateRandomName('dc')}=tostring({})`
+                `local ${generateRandomName('_junk')}=0`,
+                `local ${generateRandomName('_unused')}=nil`,
+                `local ${generateRandomName('_dummy')}=false`,
             ];
+
             const intensity = obfuscationSettings.intensity === 'heavy' ? 5 : obfuscationSettings.intensity === 'medium' ? 3 : 1;
             for (let i = 0; i < intensity; i++) {
                 const snippet = deadCodeSnippets[Math.floor(Math.random() * deadCodeSnippets.length)];
@@ -141,16 +184,32 @@ function obfuscateCode() {
             }
         }
 
-        // Step 6: Anti-tamper
+        // Step 5: Control flow obfuscation (FIXED - much safer now)
+        if (obfuscationSettings.controlFlow) {
+            const controlFlowVar = generateRandomName('_CF');
+            // Just add a control variable at the top, don't wrap every line
+            obfuscated = `local ${controlFlowVar}=true\n` + obfuscated;
+
+            // Optionally add some dummy checks
+            if (obfuscationSettings.intensity === 'heavy') {
+                const dummyCheck = `if not ${controlFlowVar} then return end\n`;
+                obfuscated = obfuscated + '\n' + dummyCheck;
+            }
+        }
+
+        // Step 6: Anti-tamper (simplified version)
         if (obfuscationSettings.antiTamper) {
-            const antiTamper = `local ${generateRandomName('at')}=function()local s=debug.getinfo(1,'S').source if s~='@'..script:GetFullName()then while true do end end end\n`;
+            const antiTamperVar = generateRandomName('_AT');
+            const antiTamper = `local ${antiTamperVar}=script:GetFullName()\n`;
             obfuscated = antiTamper + obfuscated;
         }
 
         output.value = obfuscated;
         showToast('Code obfuscated successfully!', 'success');
+
     } catch (e) {
         showToast('Error obfuscating code: ' + e.message, 'error');
+        console.error('Obfuscation error:', e);
     }
 }
 
@@ -168,27 +227,53 @@ function deobfuscateCode() {
     try {
         let deobfuscated = input;
 
-        // Remove common obfuscation patterns
-        // 1. Decode simple number encodings
+        // Remove string decryption functions
+        deobfuscated = deobfuscated.replace(/local _T=\{.*?\}\s*local function _S\(i\).*?end\s*/gs, '');
+        deobfuscated = deobfuscated.replace(/local function _D\(.*?\).*?end\s*/gs, '');
+
+        // Decode hex numbers
         deobfuscated = deobfuscated.replace(/\(0x([0-9a-fA-F]+)\)/g, (match, hex) => {
             return parseInt(hex, 16).toString();
         });
 
-        deobfuscated = deobfuscated.replace(/tonumber\("(\d+)"\)/g, '$1');
-
-        // 2. Simplify math expressions
+        // Simplify math expressions
         deobfuscated = deobfuscated.replace(/\((\d+)\+0\)/g, '$1');
+        deobfuscated = deobfuscated.replace(/\((\d+)\*1\)/g, '$1');
+        deobfuscated = deobfuscated.replace(/\((\d+)\/1\)/g, '$1');
 
-        // 3. Remove unnecessary parentheses
+        // Simplify simple additions/subtractions
+        deobfuscated = deobfuscated.replace(/\((\d+)\+(\d+)\)/g, (match, a, b) => {
+            return (parseInt(a) + parseInt(b)).toString();
+        });
+        deobfuscated = deobfuscated.replace(/\((\d+)-(\d+)\)/g, (match, a, b) => {
+            return (parseInt(a) - parseInt(b)).toString();
+        });
+        deobfuscated = deobfuscated.replace(/\((\d+)\*(\d+)\)/g, (match, a, b) => {
+            return (parseInt(a) * parseInt(b)).toString();
+        });
+
+        // Remove unnecessary parentheses around single numbers
         deobfuscated = deobfuscated.replace(/\((\d+)\)/g, '$1');
 
-        // 4. Beautify code
+        // Remove dead code (common junk variables)
+        deobfuscated = deobfuscated.replace(/local _[a-z]+_[a-zA-Z0-9_]+=(?:0|nil|false|true)\s*\n/g, '');
+
+        // Remove control flow variables
+        deobfuscated = deobfuscated.replace(/local _CF_[a-zA-Z0-9_]+=true\s*\n/g, '');
+        deobfuscated = deobfuscated.replace(/if not _CF_[a-zA-Z0-9_]+ then return end\s*\n/g, '');
+
+        // Remove anti-tamper
+        deobfuscated = deobfuscated.replace(/local _AT_[a-zA-Z0-9_]+=script:GetFullName\(\)\s*\n/g, '');
+
+        // Beautify the result
         deobfuscated = beautifyLuau(deobfuscated);
 
         output.value = deobfuscated;
-        showToast('Code deobfuscated! Note: Advanced encryption may require manual analysis', 'success');
+        showToast('Code deobfuscated and beautified!', 'success');
+
     } catch (e) {
         showToast('Error deobfuscating code: ' + e.message, 'error');
+        console.error('Deobfuscation error:', e);
     }
 }
 
@@ -200,8 +285,8 @@ function beautifyLuau(code) {
     const indentSize = 4;
     let beautified = [];
 
-    const increaseIndent = ['then', 'do', 'repeat', 'function'];
-    const decreaseIndent = ['end', 'until', 'else', 'elseif'];
+    const increaseIndent = ['then', 'do', 'repeat'];
+    const decreaseIndent = ['end', 'until'];
     const decreaseBeforeLine = ['else', 'elseif', 'until'];
 
     lines.forEach(line => {
@@ -211,20 +296,33 @@ function beautifyLuau(code) {
             return;
         }
 
+        // Handle comments
+        if (trimmed.startsWith('--')) {
+            beautified.push(' '.repeat(indent * indentSize) + trimmed);
+            return;
+        }
+
         // Decrease indent before line for certain keywords
         if (decreaseBeforeLine.some(kw => trimmed.startsWith(kw))) {
+            indent = Math.max(0, indent - 1);
+        }
+
+        // Decrease for 'end' before adding the line
+        if (trimmed === 'end' || trimmed.startsWith('end ')) {
             indent = Math.max(0, indent - 1);
         }
 
         // Add indented line
         beautified.push(' '.repeat(indent * indentSize) + trimmed);
 
-        // Adjust indent for next line
+        // Increase indent after line for certain keywords
         if (increaseIndent.some(kw => trimmed.includes(kw))) {
             indent++;
         }
-        if (decreaseIndent.some(kw => trimmed.includes(kw))) {
-            indent = Math.max(0, indent - 1);
+
+        // Special handling for function definitions
+        if (trimmed.startsWith('function') || trimmed.includes('= function')) {
+            indent++;
         }
     });
 
@@ -257,9 +355,11 @@ function minifyCode() {
     let minified = input
         .replace(/--\[\[[\s\S]*?\]\]/g, '') // Multi-line comments
         .replace(/--[^\n]*/g, '') // Single-line comments
-        .replace(/\s+/g, ' ') // Multiple spaces to single
-        .replace(/\s*([=+\-*/<>(){}[\],;])\s*/g, '$1') // Remove spaces around operators
-        .trim();
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join(' ')
+        .replace(/\s+/g, ' '); // Multiple spaces to single
 
     output.value = minified;
     showToast('Code minified!', 'success');
@@ -281,15 +381,16 @@ function analyzeScript() {
         lines: input.split('\n').length,
         functions: (input.match(/function\s+/g) || []).length,
         locals: (input.match(/local\s+/g) || []).length,
-        loops: (input.match(/\b(for|while|repeat)\b/g) || []).length
+        loops: (input.match(/\b(for|while|repeat)\b/g) || []).length,
+        comments: (input.match(/--/g) || []).length
     };
 
     // Check for deprecated functions
     const deprecated = [
-        { pattern: /wait\(\)/, msg: 'wait() without argument is deprecated, use task.wait()' },
-        { pattern: /spawn\(/, msg: 'spawn() is deprecated, use task.spawn()' },
-        { pattern: /delay\(/, msg: 'delay() is deprecated, use task.delay()' },
-        { pattern: /LoadLibrary\(/, msg: 'LoadLibrary is deprecated' },
+        { pattern: /\bwait\(\)/, msg: 'wait() without argument is deprecated, use task.wait()' },
+        { pattern: /\bspawn\(/, msg: 'spawn() is deprecated, use task.spawn()' },
+        { pattern: /\bdelay\(/, msg: 'delay() is deprecated, use task.delay()' },
+        { pattern: /LoadLibrary\(/, msg: 'LoadLibrary is deprecated and removed' },
         { pattern: /\.RobloxLocked/, msg: 'RobloxLocked is deprecated' }
     ];
 
@@ -300,7 +401,7 @@ function analyzeScript() {
     });
 
     // Check for potential issues
-    if (/while\s+true\s+do/.test(input) && !/wait\(|task\.wait\(/.test(input)) {
+    if (/while\s+true\s+do/.test(input) && !/task\.wait\(|wait\(/.test(input)) {
         issues.push({ type: 'performance', message: 'Infinite loop without wait() detected - may cause script timeout' });
     }
 
@@ -316,16 +417,23 @@ function analyzeScript() {
         issues.push({ type: 'security', message: 'loadstring() detected - major security risk' });
     }
 
+    if (stats.comments === 0 && stats.lines > 20) {
+        issues.push({ type: 'warning', message: 'No comments found - consider adding documentation' });
+    }
+
     // Generate report
     let report = '<div style="font-family: monospace;">';
-    report += '<h4>Code Statistics:</h4>';
-    report += `<p>Lines: ${stats.lines}</p>`;
-    report += `<p>Functions: ${stats.functions}</p>`;
-    report += `<p>Local Variables: ${stats.locals}</p>`;
-    report += `<p>Loops: ${stats.loops}</p>`;
+    report += '<h4 style="color: var(--accent); margin-bottom: 12px;">Code Statistics:</h4>';
+    report += '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px;">';
+    report += `<p><strong>Lines:</strong> ${stats.lines}</p>`;
+    report += `<p><strong>Functions:</strong> ${stats.functions}</p>`;
+    report += `<p><strong>Local Variables:</strong> ${stats.locals}</p>`;
+    report += `<p><strong>Loops:</strong> ${stats.loops}</p>`;
+    report += `<p><strong>Comments:</strong> ${stats.comments}</p>`;
+    report += '</div>';
 
     if (issues.length > 0) {
-        report += '<h4>Issues Found:</h4>';
+        report += '<h4 style="color: var(--warning); margin-top: 16px; margin-bottom: 12px;">Issues Found:</h4>';
         issues.forEach(issue => {
             const color = {
                 deprecated: '#ff9800',
@@ -333,10 +441,16 @@ function analyzeScript() {
                 warning: '#ff9800',
                 security: '#d32f2f'
             }[issue.type];
-            report += `<p style="color: ${color};"><i class="fas fa-exclamation-triangle"></i> ${issue.message}</p>`;
+            const icon = {
+                deprecated: 'exclamation-triangle',
+                performance: 'tachometer-alt',
+                warning: 'exclamation-circle',
+                security: 'shield-alt'
+            }[issue.type];
+            report += `<p style="color: ${color}; margin: 8px 0;"><i class="fas fa-${icon}"></i> <strong>${issue.type.toUpperCase()}:</strong> ${issue.message}</p>`;
         });
     } else {
-        report += '<p style="color: var(--success);"><i class="fas fa-check-circle"></i> No issues found!</p>';
+        report += '<p style="color: var(--success); margin-top: 16px;"><i class="fas fa-check-circle"></i> <strong>No issues found!</strong> Code looks good.</p>';
     }
 
     report += '</div>';
@@ -349,8 +463,14 @@ function analyzeScript() {
 function encodeBase64() {
     const input = document.getElementById('base64Input').value;
     const output = document.getElementById('base64Output');
+
+    if (!input) {
+        showToast('Please enter text to encode', 'error');
+        return;
+    }
+
     try {
-        output.value = btoa(input);
+        output.value = btoa(unescape(encodeURIComponent(input)));
         showToast('Encoded to Base64', 'success');
     } catch (e) {
         showToast('Error encoding: ' + e.message, 'error');
@@ -360,8 +480,14 @@ function encodeBase64() {
 function decodeBase64() {
     const input = document.getElementById('base64Input').value;
     const output = document.getElementById('base64Output');
+
+    if (!input) {
+        showToast('Please enter Base64 to decode', 'error');
+        return;
+    }
+
     try {
-        output.value = atob(input);
+        output.value = decodeURIComponent(escape(atob(input)));
         showToast('Decoded from Base64', 'success');
     } catch (e) {
         showToast('Error decoding: ' + e.message, 'error');
@@ -372,6 +498,11 @@ async function generateHash() {
     const input = document.getElementById('hashInput').value;
     const output = document.getElementById('hashOutput');
     const algorithm = document.getElementById('hashAlgorithm').value;
+
+    if (!input) {
+        showToast('Please enter text to hash', 'error');
+        return;
+    }
 
     try {
         const encoder = new TextEncoder();
@@ -411,23 +542,35 @@ function testRegex() {
     const testString = document.getElementById('regexTest').value;
     const output = document.getElementById('regexOutput');
 
+    if (!pattern) {
+        showToast('Please enter a regex pattern', 'error');
+        return;
+    }
+
     try {
         const regex = new RegExp(pattern, flags);
-        const matches = testString.match(regex);
+        const matches = Array.from(testString.matchAll(new RegExp(pattern, flags + (flags.includes('g') ? '' : 'g'))));
 
         let result = '<div style="font-family: monospace;">';
-        if (matches) {
-            result += `<p style="color: var(--success);"><i class="fas fa-check-circle"></i> ${matches.length} match(es) found:</p>`;
+        if (matches.length > 0) {
+            result += `<p style="color: var(--success); margin-bottom: 12px;"><i class="fas fa-check-circle"></i> <strong>${matches.length} match(es) found:</strong></p>`;
             matches.forEach((match, i) => {
-                result += `<p>Match ${i + 1}: <code style="background: var(--bg-secondary); padding: 2px 6px;">${match}</code></p>`;
+                result += `<p style="margin: 6px 0;"><strong>Match ${i + 1}:</strong> <code style="background: var(--bg-secondary); padding: 2px 8px; border-radius: 4px;">${match[0]}</code></p>`;
+                if (match.length > 1) {
+                    for (let j = 1; j < match.length; j++) {
+                        result += `<p style="margin: 4px 0 4px 20px; color: var(--text-secondary);">Group ${j}: <code style="background: var(--bg-secondary); padding: 2px 8px; border-radius: 4px;">${match[j]}</code></p>`;
+                    }
+                }
             });
         } else {
-            result += '<p style="color: var(--warning);">No matches found</p>';
+            result += '<p style="color: var(--warning);"><i class="fas fa-info-circle"></i> No matches found</p>';
         }
         result += '</div>';
         output.innerHTML = result;
+        showToast('Regex tested!', 'success');
     } catch (e) {
-        output.innerHTML = `<p style="color: var(--danger);">Error: ${e.message}</p>`;
+        output.innerHTML = `<p style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> <strong>Error:</strong> ${e.message}</p>`;
+        showToast('Invalid regex pattern', 'error');
     }
 }
 
@@ -439,10 +582,15 @@ function uploadObfuscatorFile() {
     input.accept = '.lua,.luau,.txt';
     input.onchange = (e) => {
         const file = e.target.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (event) => {
             document.getElementById('obfuscatorInput').value = event.target.result;
             showToast(`Loaded ${file.name}`, 'success');
+        };
+        reader.onerror = () => {
+            showToast('Error reading file', 'error');
         };
         reader.readAsText(file);
     };
@@ -464,10 +612,15 @@ function uploadDeobfuscatorFile() {
     input.accept = '.lua,.luau,.txt';
     input.onchange = (e) => {
         const file = e.target.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (event) => {
             document.getElementById('deobfuscatorInput').value = event.target.result;
             showToast(`Loaded ${file.name}`, 'success');
+        };
+        reader.onerror = () => {
+            showToast('Error reading file', 'error');
         };
         reader.readAsText(file);
     };
@@ -499,6 +652,10 @@ function downloadFile(content, filename, mimeType) {
 // Copy functions
 function copyObfuscatorOutput() {
     const output = document.getElementById('obfuscatorOutput');
+    if (!output.value.trim()) {
+        showToast('No output to copy', 'error');
+        return;
+    }
     output.select();
     document.execCommand('copy');
     showToast('Copied to clipboard!', 'success');
@@ -506,6 +663,10 @@ function copyObfuscatorOutput() {
 
 function copyDeobfuscatorOutput() {
     const output = document.getElementById('deobfuscatorOutput');
+    if (!output.value.trim()) {
+        showToast('No output to copy', 'error');
+        return;
+    }
     output.select();
     document.execCommand('copy');
     showToast('Copied to clipboard!', 'success');

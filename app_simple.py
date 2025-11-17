@@ -6,9 +6,8 @@ Bulletproof version with minimal dependencies
 import os
 import json
 import sqlite3
-import flask
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, __version__ as flask_version
 from flask_cors import CORS
 
 # Import our API client
@@ -2532,7 +2531,7 @@ def system_health():
         'uptime': 'N/A',
         'version': '2.0.0',
         'python_version': sys.version.split()[0],
-        'flask_version': flask.__version__
+        'flask_version': flask_version
     })
 
 

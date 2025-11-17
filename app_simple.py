@@ -1927,6 +1927,19 @@ def proxy_thumbnails_assets():
     return jsonify(data), status
 
 
+@app.route('/proxy/thumbnails/badges')
+def proxy_thumbnails_badges():
+    """Get batch badge thumbnails"""
+    badge_ids = request.args.get('badgeIds', '')
+    size = request.args.get('size', '150x150')
+    format_type = request.args.get('format', 'Png')
+    url = f"https://thumbnails.roblox.com/v1/badges/icons?badgeIds={badge_ids}&size={size}&format={format_type}"
+    data, status = make_proxy_request(url, '/proxy/thumbnails/badges')
+    if status == 200:
+        proxy_cache[f"thumb_badges_{badge_ids}"] = {'data': data, 'time': time.time()}
+    return jsonify(data), status
+
+
 @app.route('/proxy/groups/<group_id>')
 def proxy_group_info(group_id):
     """Get group information"""
@@ -1994,6 +2007,17 @@ def proxy_user_status(user_id):
     if status == 200:
         proxy_cache[f"status_{user_id}"] = {'data': data, 'time': time.time()}
     return jsonify(data), status
+
+
+@app.route('/proxy/users/<user_id>/presence')
+def proxy_user_presence(user_id):
+    """Get user's presence (online status)"""
+    try:
+        url = 'https://presence.roblox.com/v1/presence/users'
+        response = requests.post(url, json={'userIds': [int(user_id)]}, timeout=30)
+        return jsonify(response.json()), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/proxy/games/sorts')

@@ -1989,7 +1989,7 @@ async function lookupUser() {
             noGroups.style.display = 'block';
         }
 
-        // Load badges
+        // Load badges with thumbnails
         showToast('Loading badges...', 'info');
         try {
             const badgesResponse = await fetch(`/proxy/users/${userId}/badges`);
@@ -2007,9 +2007,24 @@ async function lookupUser() {
                 noBadges.style.display = 'none';
                 badgesGrid.style.display = 'grid';
 
+                // Fetch badge thumbnails via proxy
+                const badgeIds = badges.map(b => b.id).join(',');
+                let badgeThumbnails = {};
+                try {
+                    const thumbResponse = await fetch(`/proxy/thumbnails/badges?badgeIds=${badgeIds}`);
+                    const thumbData = await thumbResponse.json();
+                    if (thumbData.data) {
+                        thumbData.data.forEach(item => {
+                            badgeThumbnails[item.targetId] = item.imageUrl;
+                        });
+                    }
+                } catch (e) {
+                    console.log('Badge thumbnails error:', e);
+                }
+
                 badgesGrid.innerHTML = badges.map(badge => `
                     <div style="text-align: center; background: var(--bg-tertiary); padding: 12px; border-radius: 8px;" title="${escapeHtml(badge.displayName || badge.name)}">
-                        <img src="https://badges.roblox.com/v1/badges/${badge.id}/image" alt="${escapeHtml(badge.name)}" style="width: 80px; height: 80px; border-radius: 8px; margin-bottom: 8px; background: var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect fill=%22%23333%22 width=%2280%22 height=%2280%22/></svg>'">
+                        <img src="${badgeThumbnails[badge.id] || ''}" alt="${escapeHtml(badge.name)}" style="width: 80px; height: 80px; border-radius: 8px; margin-bottom: 8px; background: var(--bg-card);" onerror="this.style.display='none'">
                         <div style="font-size: 11px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml((badge.displayName || badge.name).substring(0, 15))}</div>
                     </div>
                 `).join('');
@@ -2022,7 +2037,7 @@ async function lookupUser() {
             console.log('Badges error:', e);
         }
 
-        // Load friends
+        // Load friends with thumbnails and presence
         showToast('Loading friends...', 'info');
         try {
             const friendsResponse = await fetch(`/proxy/users/${userId}/friends`);
@@ -2037,19 +2052,92 @@ async function lookupUser() {
                 const friends = friendsData.data.slice(0, 30); // Show max 30
                 friendsCount.textContent = friendsData.data.length;
 
-                friendsGrid.innerHTML = friends.map(friend => `
-                    <a href="https://www.roblox.com/users/${friend.id}/profile" target="_blank" style="text-decoration: none; text-align: center; background: var(--bg-tertiary); padding: 12px; border-radius: 8px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''">
-                        <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${friend.id}&width=100&height=100&format=png" alt="${escapeHtml(friend.name)}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 8px; background: var(--bg-card);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect fill=%22%23333%22 width=%2280%22 height=%2280%22 rx=%2240%22/></svg>'">
-                        <div style="font-size: 11px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(friend.displayName)}</div>
-                        <div style="font-size: 10px; color: var(--text-secondary);">@${escapeHtml(friend.name)}</div>
-                    </a>
-                `).join('');
+                // Fetch friend thumbnails via proxy
+                const friendIds = friends.map(f => f.id).join(',');
+                let friendThumbnails = {};
+                let friendPresence = {};
+
+                try {
+                    const thumbResponse = await fetch(`/proxy/thumbnails/users?userIds=${friendIds}`);
+                    const thumbData = await thumbResponse.json();
+                    if (thumbData.data) {
+                        thumbData.data.forEach(item => {
+                            friendThumbnails[item.targetId] = item.imageUrl;
+                        });
+                    }
+                } catch (e) {
+                    console.log('Friend thumbnails error:', e);
+                }
+
+                // Fetch presence for friends
+                try {
+                    const presenceResponse = await fetch('/proxy/presence/batch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userIds: friends.map(f => f.id) })
+                    });
+                    const presenceData = await presenceResponse.json();
+                    if (presenceData.userPresences) {
+                        presenceData.userPresences.forEach(p => {
+                            friendPresence[p.userId] = p;
+                        });
+                    }
+                } catch (e) {
+                    console.log('Friend presence error:', e);
+                }
+
+                friendsGrid.innerHTML = friends.map(friend => {
+                    const presence = friendPresence[friend.id] || {};
+                    const presenceType = presence.userPresenceType || 0;
+                    const presenceColor = presenceType === 2 ? '#43e97b' : presenceType === 1 ? '#4facfe' : presenceType === 3 ? '#ffd700' : '#666';
+                    const presenceLabel = presenceType === 2 ? 'In Game' : presenceType === 1 ? 'Online' : presenceType === 3 ? 'In Studio' : 'Offline';
+                    const thumbnail = friendThumbnails[friend.id] || '';
+
+                    return `
+                        <a href="https://www.roblox.com/users/${friend.id}/profile" target="_blank" style="text-decoration: none; text-align: center; background: var(--bg-tertiary); padding: 12px; border-radius: 8px; transition: transform 0.2s; position: relative;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''">
+                            <div style="position: relative; display: inline-block;">
+                                <img src="${thumbnail}" alt="${escapeHtml(friend.name)}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 8px; background: var(--bg-card);" onerror="this.style.opacity='0.5'">
+                                <div style="position: absolute; bottom: 4px; right: 4px; width: 16px; height: 16px; background: ${presenceColor}; border-radius: 50%; border: 3px solid var(--bg-tertiary);" title="${presenceLabel}"></div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(friend.displayName)}</div>
+                            <div style="font-size: 10px; color: var(--text-secondary);">@${escapeHtml(friend.name)}</div>
+                            <div style="font-size: 9px; color: ${presenceColor}; margin-top: 4px;">${presenceLabel}</div>
+                        </a>
+                    `;
+                }).join('');
             } else {
                 friendsCount.textContent = '0';
                 friendsGrid.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 20px;">No friends to display</div>';
             }
         } catch (e) {
             console.log('Friends error:', e);
+        }
+
+        // Load user presence
+        showToast('Loading presence...', 'info');
+        try {
+            const presenceResponse = await fetch(`/proxy/users/${userId}/presence`);
+            const presenceData = await presenceResponse.json();
+
+            if (!presenceData.error && presenceData.userPresences && presenceData.userPresences.length > 0) {
+                const presence = presenceData.userPresences[0];
+                const presenceType = presence.userPresenceType || 0;
+                const presenceColor = presenceType === 2 ? '#43e97b' : presenceType === 1 ? '#4facfe' : presenceType === 3 ? '#ffd700' : '#666';
+                const presenceLabel = presenceType === 2 ? 'In Game' : presenceType === 1 ? 'Online' : presenceType === 3 ? 'In Studio' : 'Offline';
+
+                // Add presence indicator to profile
+                const userDisplay = document.getElementById('userInfoDisplay');
+                const presenceIndicator = `
+                    <div style="position: absolute; top: 20px; right: 20px; background: ${presenceColor}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                        <i class="fas fa-circle" style="font-size: 8px; margin-right: 6px;"></i> ${presenceLabel}
+                        ${presence.lastLocation ? `<br><small style="font-size: 10px; opacity: 0.9;">${escapeHtml(presence.lastLocation)}</small>` : ''}
+                    </div>
+                `;
+                userDisplay.querySelector('div').style.position = 'relative';
+                userDisplay.querySelector('div').insertAdjacentHTML('beforeend', presenceIndicator);
+            }
+        } catch (e) {
+            console.log('Presence error:', e);
         }
 
         // Load username history

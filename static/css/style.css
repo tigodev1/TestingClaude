@@ -1,196 +1,26 @@
 /* Tigos API Playground - Modern UI Styles */
 
-:root, [data-theme="dark"] {
-    --bg-primary: #0a0a0f;
-    --bg-secondary: #12121a;
-    --bg-tertiary: #1e1e2e;
-    --bg-card: #16161f;
-    --text-primary: #f0f0f5;
-    --text-secondary: #a0a0b0;
-    --accent-primary: #667eea;
-    --accent-secondary: #764ba2;
-    --success: #43e97b;
-    --warning: #fa709a;
-    --danger: #f5576c;
-    --info: #4facfe;
-    --border: rgba(255, 255, 255, 0.08);
-    --shadow: rgba(0, 0, 0, 0.6);
-    --glow: rgba(102, 126, 234, 0.15);
-    --theme-bg: none;
-}
-
-[data-theme="cyberpunk"] {
-    --bg-primary: #0a0014;
-    --bg-secondary: #120020;
-    --bg-tertiary: #1a0030;
-    --bg-card: rgba(18, 0, 32, 0.9);
-    --text-primary: #ff00ff;
-    --text-secondary: #cc00cc;
-    --accent-primary: #00ffff;
-    --accent-secondary: #ff00ff;
-    --success: #00ff00;
-    --warning: #ffff00;
-    --danger: #ff0066;
-    --info: #00ffff;
-    --border: rgba(255, 0, 255, 0.3);
-    --shadow: rgba(255, 0, 255, 0.3);
-    --glow: rgba(0, 255, 255, 0.3);
-}
-
-[data-theme="space"] {
-    --bg-primary: #000011;
-    --bg-secondary: rgba(10, 10, 40, 0.95);
-    --bg-tertiary: rgba(20, 20, 60, 0.9);
-    --bg-card: rgba(15, 15, 50, 0.85);
-    --text-primary: #e0e0ff;
-    --text-secondary: #a0a0d0;
-    --accent-primary: #8b5cf6;
-    --accent-secondary: #6366f1;
+:root {
+    --bg-primary: #0f0f14;
+    --bg-secondary: #16161d;
+    --bg-tertiary: #1c1c26;
+    --bg-card: #1a1a23;
+    --text-primary: #e8e8ed;
+    --text-secondary: #8f8fa3;
+    --accent-primary: #6366f1;
+    --accent-secondary: #8b5cf6;
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
-    --info: #60a5fa;
-    --border: rgba(139, 92, 246, 0.2);
-    --shadow: rgba(0, 0, 0, 0.8);
-    --glow: rgba(139, 92, 246, 0.3);
+    --info: #3b82f6;
+    --border: rgba(255, 255, 255, 0.1);
+    --shadow: rgba(0, 0, 0, 0.5);
+    --glow: rgba(99, 102, 241, 0.2);
 }
 
-[data-theme="matrix"] {
-    --bg-primary: #000000;
-    --bg-secondary: rgba(0, 10, 0, 0.95);
-    --bg-tertiary: rgba(0, 20, 0, 0.9);
-    --bg-card: rgba(0, 15, 0, 0.9);
-    --text-primary: #00ff00;
-    --text-secondary: #00cc00;
-    --accent-primary: #00ff00;
-    --accent-secondary: #00cc00;
-    --success: #00ff00;
-    --warning: #ccff00;
-    --danger: #ff0000;
-    --info: #00ffcc;
-    --border: rgba(0, 255, 0, 0.2);
-    --shadow: rgba(0, 255, 0, 0.2);
-    --glow: rgba(0, 255, 0, 0.3);
-}
-
-[data-theme="sunset"] {
-    --bg-primary: #1a0a1e;
-    --bg-secondary: #2d1233;
-    --bg-tertiary: #3d1a44;
-    --bg-card: rgba(45, 18, 51, 0.95);
-    --text-primary: #ffd6e0;
-    --text-secondary: #ffaac4;
-    --accent-primary: #ff6b9d;
-    --accent-secondary: #ff9a56;
-    --success: #7dff7d;
-    --warning: #ffd93d;
-    --danger: #ff4757;
-    --info: #70a1ff;
-    --border: rgba(255, 107, 157, 0.2);
-    --shadow: rgba(255, 107, 157, 0.2);
-    --glow: rgba(255, 107, 157, 0.3);
-}
-
-/* Animated Backgrounds */
+/* Clean modern background */
 .main-content {
     position: relative;
-}
-
-.main-content::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 260px;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: -1;
-}
-
-/* Space theme - animated stars */
-[data-theme="space"] .main-content::before {
-    background:
-        radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
-        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
-        radial-gradient(1px 1px at 90px 40px, #ffffff, transparent),
-        radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.9), transparent),
-        radial-gradient(1px 1px at 200px 60px, #ffffff, transparent),
-        radial-gradient(2px 2px at 300px 180px, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 400px 90px, #ffffff, transparent),
-        radial-gradient(2px 2px at 500px 200px, rgba(255,255,255,0.8), transparent);
-    background-repeat: repeat;
-    background-size: 550px 300px;
-    animation: twinkle 8s ease-in-out infinite;
-}
-
-@keyframes twinkle {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
-}
-
-/* Cyberpunk theme - moving grid */
-[data-theme="cyberpunk"] .main-content::before {
-    background:
-        linear-gradient(rgba(255, 0, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 0, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(rgba(0, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
-    animation: gridMove 20s linear infinite;
-}
-
-@keyframes gridMove {
-    0% { background-position: 0 0, 0 0, 0 0, 0 0; }
-    100% { background-position: 100px 100px, 100px 100px, 20px 20px, 20px 20px; }
-}
-
-/* Matrix theme - falling code effect */
-[data-theme="matrix"] .main-content::before {
-    background: linear-gradient(0deg,
-        transparent 0%,
-        rgba(0, 255, 0, 0.03) 50%,
-        transparent 100%);
-    background-size: 100% 200%;
-    animation: matrixRain 3s linear infinite;
-}
-
-@keyframes matrixRain {
-    0% { background-position: 0 -100%; }
-    100% { background-position: 0 100%; }
-}
-
-/* Sunset theme - gradient wave */
-[data-theme="sunset"] .main-content::before {
-    background: linear-gradient(135deg,
-        rgba(255, 107, 157, 0.05) 0%,
-        rgba(255, 154, 86, 0.05) 50%,
-        rgba(255, 107, 157, 0.05) 100%);
-    background-size: 400% 400%;
-    animation: gradientWave 15s ease infinite;
-}
-
-@keyframes gradientWave {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-/* Theme button styles */
-.theme-btn {
-    transition: all 0.3s ease;
-    font-size: 11px !important;
-}
-
-.theme-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.theme-btn.active {
-    background: var(--accent-primary) !important;
-    color: white !important;
-    border-color: var(--accent-primary) !important;
-    box-shadow: 0 0 15px var(--glow);
 }
 
 * {

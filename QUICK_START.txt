@@ -1,0 +1,58 @@
+================================================================================
+                    ROBLOX DATASTORE MANAGER - QUICK START
+================================================================================
+
+INSTALLATION (First Time Setup)
+================================
+1. Double-click "install.bat"
+2. Wait for installation to complete (may take a few minutes)
+3. Done!
+
+
+RUNNING THE APPLICATION
+=======================
+1. Double-click "start.bat"
+2. Browser will open automatically to http://127.0.0.1:5000
+3. Configure your API credentials in Settings tab
+
+
+BUILDING STANDALONE .EXE
+=========================
+1. Double-click "build_exe.bat"
+2. Wait for build to complete
+3. Find RobloxDataStoreManager.exe in dist/ folder
+
+
+GETTING YOUR API KEY
+====================
+1. Visit: https://create.roblox.com/credentials
+2. Click "Create API Key"
+3. Enable "DataStores" permission
+4. Add your game/universe
+5. Copy the key
+
+
+FINDING YOUR UNIVERSE ID
+==========================
+1. Visit: https://create.roblox.com
+2. Click on your game
+3. Go to Settings > Basic Info
+4. Copy "Universe ID" (NOT Place ID!)
+
+
+NEED HELP?
+==========
+- Read README.md for full documentation
+- Check Settings > API Request Log for debugging
+- Operation History shows all actions taken
+
+
+SUPPORT
+=======
+Report issues on GitHub
+Documentation: README.md
+
+
+================================================================================
+                         Happy DataStore Managing!
+================================================================================

@@ -66,6 +66,7 @@
 <div class="nav-item" data-page="model-info"><i class="fas fa-cubes"></i><span>Model Info</span></div>
 <div class="nav-item" data-page="asset-downloader"><i class="fas fa-download"></i><span>Asset Downloader</span></div>
 <div class="nav-section"><div class="nav-section-title">Script Utils</div></div>
+<div class="nav-item" data-page="code-organizer"><i class="fas fa-layer-group"></i><span>Smart Organizer</span></div>
 <div class="nav-item" data-page="code-minifier"><i class="fas fa-compress"></i><span>Code Minifier</span></div>
 <div class="nav-item" data-page="comment-stripper"><i class="fas fa-eraser"></i><span>Comment Stripper</span></div>
 <div class="nav-item" data-page="var-renamer"><i class="fas fa-i-cursor"></i><span>Variable Renamer</span></div>
@@ -622,6 +623,26 @@ Jane,30,95"></textarea></div><div class="flex gap-2 mt-3"><button class="btn btn
 <div class="page-header"><h1 class="page-title">Asset Downloader</h1><p class="page-subtitle">Download Roblox assets and models</p></div>
 <div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Asset ID</label><input type="text" id="downloadAssetId" class="form-input" placeholder="Enter asset ID..."></div><div class="form-group"><label class="form-label">Asset Type</label><select id="downloadAssetType" class="form-input"><option value="model">Model</option><option value="audio">Audio</option><option value="image">Image</option><option value="mesh">Mesh</option></select></div><button class="btn btn-primary" onclick="downloadAsset()"><i class="fas fa-download"></i> Download</button></div></div>
 <div class="card"><div class="card-header"><h3 class="card-title">Download Status</h3></div><div class="card-body"><div id="downloadStatus"><p class="text-muted">Enter an asset ID to download</p></div></div></div>
+</div>
+
+<!-- Smart Code Organizer -->
+<div id="page-code-organizer" class="page">
+<div class="page-header"><h1 class="page-title">Smart Code Organizer</h1><p class="page-subtitle">Remove comments and auto-add smart section headers</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Input Code</label><textarea id="organizerInput" class="form-input font-mono" rows="18" placeholder="-- Paste your messy code here
+local Players = game:GetService('Players')
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+
+-- some variable
+local myVar = 5
+
+function doSomething()
+  print('hello')
+end
+
+-- remote event stuff
+local myRemote = ReplicatedStorage.MyRemote"></textarea></div><div class="grid-2 mb-3"><div class="form-group"><input type="checkbox" id="removeAllComments" checked> <label>Remove all existing comments</label></div><div class="form-group"><input type="checkbox" id="addHeaders" checked> <label>Add smart section headers</label></div></div><button class="btn btn-primary" onclick="organizeCode()"><i class="fas fa-layer-group"></i> Organize Code</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Organized Code</h3><button class="btn btn-sm btn-secondary" onclick="copyCode('organizerOutput')"><i class="fas fa-copy"></i></button></div><div class="card-body"><textarea id="organizerOutput" class="form-input font-mono" rows="18" readonly placeholder="Organized code with smart headers will appear here..."></textarea></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">How It Works</h3></div><div class="card-body"><ul style="list-style:none;padding:0;"><li class="mb-2"><i class="fas fa-check" style="color:var(--success);"></i> <strong>Auto-detects Services:</strong> Groups all :GetService() calls</li><li class="mb-2"><i class="fas fa-check" style="color:var(--success);"></i> <strong>Finds Variables:</strong> Groups local variables at the top</li><li class="mb-2"><i class="fas fa-check" style="color:var(--success);"></i> <strong>Detects Remotes:</strong> Groups RemoteEvent/RemoteFunction declarations</li><li class="mb-2"><i class="fas fa-check" style="color:var(--success);"></i> <strong>Organizes Functions:</strong> Groups all function definitions</li><li class="mb-2"><i class="fas fa-check" style="color:var(--success);"></i> <strong>Identifies Connections:</strong> Groups event connections (.Changed, .Touched, etc)</li><li class="mb-2"><i class="fas fa-check" style="color:var(--success);"></i> <strong>Removes Clutter:</strong> Strips all comments and extra blank lines</li></ul></div></div>
 </div>
 
 <!-- Code Minifier -->

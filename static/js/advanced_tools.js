@@ -537,6 +537,188 @@ function downloadAsset() {
 
 // Script Utils
 
+function organizeCode() {
+    const input = document.getElementById('organizerInput').value;
+    const removeComments = document.getElementById('removeAllComments').checked;
+    const addHeaders = document.getElementById('addHeaders').checked;
+
+    if (!input.trim()) {
+        showToast('Enter code to organize', 'error');
+        return;
+    }
+
+    let lines = input.split('\n');
+
+    // Step 1: Remove comments if enabled
+    if (removeComments) {
+        lines = lines.map(line => {
+            // Remove single-line comments
+            const commentIndex = line.indexOf('--');
+            if (commentIndex !== -1) {
+                // Check if it's inside a string
+                const beforeComment = line.substring(0, commentIndex);
+                const inString = (beforeComment.split('"').length - 1) % 2 === 1 ||
+                                (beforeComment.split("'").length - 1) % 2 === 1;
+                if (!inString) {
+                    return line.substring(0, commentIndex).trimEnd();
+                }
+            }
+            return line;
+        });
+
+        // Remove multiline comments
+        let inMultilineComment = false;
+        lines = lines.filter(line => {
+            if (line.includes('--[[')) inMultilineComment = true;
+            if (inMultilineComment) {
+                if (line.includes(']]')) {
+                    inMultilineComment = false;
+                }
+                return false;
+            }
+            return true;
+        });
+    }
+
+    // Step 2: Categorize lines
+    const sections = {
+        services: [],
+        variables: [],
+        remotes: [],
+        functions: [],
+        connections: [],
+        other: []
+    };
+
+    let currentFunction = null;
+    let functionDepth = 0;
+
+    lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return; // Skip empty lines
+
+        // Detect services
+        if (trimmed.includes(':GetService(') || trimmed.includes('= game.') && trimmed.includes('Service')) {
+            sections.services.push(line);
+        }
+        // Detect remotes
+        else if (trimmed.includes('RemoteEvent') || trimmed.includes('RemoteFunction') ||
+                 trimmed.includes('BindableEvent') || trimmed.includes('BindableFunction')) {
+            sections.remotes.push(line);
+        }
+        // Detect function definitions
+        else if (trimmed.match(/^(local\s+)?function\s+\w+/) || trimmed.includes('= function(')) {
+            currentFunction = [line];
+            functionDepth = 1;
+        }
+        // Continue capturing function body
+        else if (currentFunction !== null) {
+            currentFunction.push(line);
+
+            // Track depth with 'end'
+            if (trimmed === 'end') {
+                functionDepth--;
+                if (functionDepth === 0) {
+                    sections.functions.push(currentFunction.join('\n'));
+                    currentFunction = null;
+                }
+            } else if (trimmed.startsWith('function ') || trimmed.includes(' function(')) {
+                functionDepth++;
+            }
+        }
+        // Detect event connections
+        else if (trimmed.includes('.Changed:') || trimmed.includes('.Touched:') ||
+                 trimmed.includes('.Died:') || trimmed.includes('.ChildAdded:') ||
+                 trimmed.includes(':Connect(') || trimmed.includes('OnServerEvent') ||
+                 trimmed.includes('OnClientEvent')) {
+            sections.connections.push(line);
+        }
+        // Detect local variables
+        else if (trimmed.startsWith('local ') && !trimmed.includes('function')) {
+            sections.variables.push(line);
+        }
+        // Everything else
+        else {
+            sections.other.push(line);
+        }
+    });
+
+    // Step 3: Build organized output
+    let output = [];
+
+    if (addHeaders) {
+        // Add services section
+        if (sections.services.length > 0) {
+            output.push('--// Services');
+            output.push(...sections.services);
+            output.push('');
+        }
+
+        // Add variables section
+        if (sections.variables.length > 0) {
+            output.push('--// Variables');
+            output.push(...sections.variables);
+            output.push('');
+        }
+
+        // Add remotes section
+        if (sections.remotes.length > 0) {
+            output.push('--// Remotes');
+            output.push(...sections.remotes);
+            output.push('');
+        }
+
+        // Add functions section
+        if (sections.functions.length > 0) {
+            output.push('--// Functions');
+            sections.functions.forEach((func, i) => {
+                output.push(func);
+                if (i < sections.functions.length - 1) output.push('');
+            });
+            output.push('');
+        }
+
+        // Add connections section
+        if (sections.connections.length > 0) {
+            output.push('--// Connections');
+            output.push(...sections.connections);
+            output.push('');
+        }
+
+        // Add other code
+        if (sections.other.length > 0) {
+            output.push('--// Main Code');
+            output.push(...sections.other);
+        }
+    } else {
+        // Just concatenate without headers
+        output = [
+            ...sections.services,
+            '',
+            ...sections.variables,
+            '',
+            ...sections.remotes,
+            '',
+            ...sections.functions.join('\n\n').split('\n'),
+            '',
+            ...sections.connections,
+            '',
+            ...sections.other
+        ];
+    }
+
+    // Remove excessive blank lines
+    const finalOutput = output
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    document.getElementById('organizerOutput').value = finalOutput;
+
+    const stats = `Organized: ${sections.services.length} services, ${sections.variables.length} vars, ${sections.remotes.length} remotes, ${sections.functions.length} functions`;
+    showToast(stats, 'success');
+}
+
 function minifyCode() {
     const input = document.getElementById('minifyInput').value;
     // Simple minification: remove comments and extra whitespace

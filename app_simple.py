@@ -3082,7 +3082,7 @@ def delete_image(image_id):
 # ============= OPENCLOUD V2 - UNIVERSE & PLACES API =============
 
 @app.route('/api/roblox/v2/universe/<universe_id>/info')
-def get_universe_info(universe_id):
+def get_universe_info_v2(universe_id):
     """Get detailed universe information"""
     try:
         headers = {

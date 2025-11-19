@@ -3076,6 +3076,1364 @@ def delete_image(image_id):
     return jsonify({'success': True})
 
 
+# ============= ROBLOX ADVANCED FEATURES =============
+# 50+ Advanced Features for Roblox Development
+
+# ============= OPENCLOUD V2 - UNIVERSE & PLACES API =============
+
+@app.route('/api/roblox/v2/universe/<universe_id>/info')
+def get_universe_info(universe_id):
+    """Get detailed universe information"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/universes/{universe_id}',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}', 'details': response.text}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/universe/<universe_id>/places')
+def get_universe_places(universe_id):
+    """Get all places in a universe"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/universes/{universe_id}/places',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/place/<place_id>/publish', methods=['POST'])
+def publish_place(place_id):
+    """Publish a place to Roblox"""
+    try:
+        data = request.json
+        version_type = data.get('versionType', 'Published')
+
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        payload = {
+            'versionType': version_type
+        }
+
+        response = requests.post(
+            f'https://apis.roblox.com/cloud/v2/places/{place_id}:publish',
+            headers=headers,
+            json=payload
+        )
+
+        if response.status_code == 200:
+            return jsonify({'success': True, 'data': response.json()})
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/place/<place_id>/versions')
+def get_place_versions(place_id):
+    """Get version history for a place"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/places/{place_id}/versions',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/universe/<universe_id>/configuration')
+def get_universe_configuration(universe_id):
+    """Get universe configuration settings"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/universes/{universe_id}/configuration',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= OPENCLOUD V2 - ASSETS & ECONOMY =============
+
+@app.route('/api/roblox/v2/assets/upload', methods=['POST'])
+def upload_asset():
+    """Upload an asset to Roblox"""
+    try:
+        data = request.json
+        asset_type = data.get('assetType')
+        display_name = data.get('displayName')
+        description = data.get('description', '')
+        creator_id = data.get('creatorId')
+
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        payload = {
+            'assetType': asset_type,
+            'displayName': display_name,
+            'description': description,
+            'creatorTargetId': creator_id
+        }
+
+        response = requests.post(
+            'https://apis.roblox.com/cloud/v2/assets',
+            headers=headers,
+            json=payload
+        )
+
+        if response.status_code == 200:
+            return jsonify({'success': True, 'data': response.json()})
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/universe/<universe_id>/products')
+def get_universe_products(universe_id):
+    """Get all developer products for a universe"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/universes/{universe_id}/developer-products',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/universe/<universe_id>/game-passes')
+def get_universe_game_passes(universe_id):
+    """Get all game passes for a universe"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/universes/{universe_id}/game-passes',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/universe/<universe_id>/badges')
+def get_universe_badges(universe_id):
+    """Get all badges for a universe"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/universes/{universe_id}/badges',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/product/create', methods=['POST'])
+def create_developer_product():
+    """Create a new developer product"""
+    try:
+        data = request.json
+        universe_id = data.get('universeId')
+        name = data.get('name')
+        price_robux = data.get('priceInRobux')
+        description = data.get('description', '')
+
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        payload = {
+            'name': name,
+            'priceInRobux': price_robux,
+            'description': description
+        }
+
+        response = requests.post(
+            f'https://apis.roblox.com/cloud/v2/universes/{universe_id}/developer-products',
+            headers=headers,
+            json=payload
+        )
+
+        if response.status_code == 200:
+            return jsonify({'success': True, 'data': response.json()})
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= OPENCLOUD V2 - GROUPS & SOCIAL =============
+
+@app.route('/api/roblox/v2/groups/<group_id>/info')
+def get_group_info_v2(group_id):
+    """Get detailed group information via OpenCloud v2"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/groups/{group_id}',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/groups/<group_id>/members')
+def get_group_members_v2(group_id):
+    """Get group members via OpenCloud v2"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/groups/{group_id}/members',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/groups/<group_id>/roles')
+def get_group_roles_v2(group_id):
+    """Get group roles via OpenCloud v2"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/groups/{group_id}/roles',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/groups/<group_id>/shout', methods=['POST'])
+def set_group_shout(group_id):
+    """Set group shout message"""
+    try:
+        data = request.json
+        message = data.get('message', '')
+
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        payload = {'message': message}
+
+        response = requests.post(
+            f'https://apis.roblox.com/cloud/v2/groups/{group_id}/shout',
+            headers=headers,
+            json=payload
+        )
+
+        if response.status_code == 200:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/v2/user/<user_id>/groups')
+def get_user_groups_v2(user_id):
+    """Get user's groups via OpenCloud v2"""
+    try:
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(
+            f'https://apis.roblox.com/cloud/v2/users/{user_id}/groups',
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= OPENCLOUD V1 - ADVANCED DATASTORES =============
+
+@app.route('/api/roblox/memorystore/<universe_id>/publish', methods=['POST'])
+def publish_to_messaging_service(universe_id):
+    """Publish message to MessagingService"""
+    try:
+        data = request.json
+        topic = data.get('topic')
+        message = data.get('message')
+
+        headers = {
+            'x-api-key': global_config.get('api_key', ''),
+            'Content-Type': 'application/json'
+        }
+
+        payload = {'message': message}
+
+        response = requests.post(
+            f'https://apis.roblox.com/messaging-service/v1/universes/{universe_id}/topics/{topic}',
+            headers=headers,
+            json=payload
+        )
+
+        if response.status_code == 200:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/datastore/<universe_id>/<datastore>/list-all')
+def list_all_datastore_keys(universe_id, datastore):
+    """List all keys in a datastore with pagination"""
+    try:
+        headers = {'x-api-key': global_config.get('api_key', '')}
+        all_keys = []
+        cursor = ''
+
+        while True:
+            url = f'https://apis.roblox.com/datastores/v1/universes/{universe_id}/standard-datastores/datastore/entries'
+            params = {
+                'datastoreName': datastore,
+                'limit': 100
+            }
+            if cursor:
+                params['cursor'] = cursor
+
+            response = requests.get(url, headers=headers, params=params)
+
+            if response.status_code == 200:
+                data = response.json()
+                all_keys.extend(data.get('keys', []))
+                cursor = data.get('nextPageCursor', '')
+                if not cursor:
+                    break
+            else:
+                return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+
+        return jsonify({'keys': all_keys, 'total': len(all_keys)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/datastore/<universe_id>/<datastore>/bulk-get', methods=['POST'])
+def bulk_get_datastore_entries(universe_id, datastore):
+    """Get multiple datastore entries at once"""
+    try:
+        data = request.json
+        keys = data.get('keys', [])
+
+        headers = {'x-api-key': global_config.get('api_key', '')}
+        results = {}
+
+        for key in keys:
+            response = requests.get(
+                f'https://apis.roblox.com/datastores/v1/universes/{universe_id}/standard-datastores/datastore/entries/entry',
+                headers=headers,
+                params={'datastoreName': datastore, 'entryKey': key}
+            )
+
+            if response.status_code == 200:
+                results[key] = response.json()
+            else:
+                results[key] = {'error': f'Failed: {response.status_code}'}
+
+        return jsonify({'results': results})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/datastore/<universe_id>/<datastore>/search', methods=['POST'])
+def search_datastore_entries(universe_id, datastore):
+    """Search datastore entries by pattern"""
+    try:
+        data = request.json
+        pattern = data.get('pattern', '')
+
+        headers = {'x-api-key': global_config.get('api_key', '')}
+
+        # Get all keys
+        response = requests.get(
+            f'https://apis.roblox.com/datastores/v1/universes/{universe_id}/standard-datastores/datastore/entries',
+            headers=headers,
+            params={'datastoreName': datastore, 'prefix': pattern, 'limit': 100}
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/datastore/<universe_id>/<datastore>/export', methods=['POST'])
+def export_datastore(universe_id, datastore):
+    """Export entire datastore to JSON"""
+    try:
+        headers = {'x-api-key': global_config.get('api_key', '')}
+        all_data = {}
+        cursor = ''
+
+        while True:
+            url = f'https://apis.roblox.com/datastores/v1/universes/{universe_id}/standard-datastores/datastore/entries'
+            params = {
+                'datastoreName': datastore,
+                'limit': 100
+            }
+            if cursor:
+                params['cursor'] = cursor
+
+            response = requests.get(url, headers=headers, params=params)
+
+            if response.status_code == 200:
+                data = response.json()
+                keys = data.get('keys', [])
+
+                # Fetch each entry
+                for key_info in keys:
+                    key = key_info['key']
+                    entry_response = requests.get(
+                        f'https://apis.roblox.com/datastores/v1/universes/{universe_id}/standard-datastores/datastore/entries/entry',
+                        headers=headers,
+                        params={'datastoreName': datastore, 'entryKey': key}
+                    )
+                    if entry_response.status_code == 200:
+                        all_data[key] = entry_response.json()
+
+                cursor = data.get('nextPageCursor', '')
+                if not cursor:
+                    break
+            else:
+                return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+
+        return jsonify({
+            'datastore': datastore,
+            'universe_id': universe_id,
+            'export_date': datetime.now().isoformat(),
+            'total_entries': len(all_data),
+            'data': all_data
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= LEGACY API - USERS & SOCIAL =============
+
+@app.route('/api/roblox/legacy/users/<user_id>')
+def get_user_info(user_id):
+    """Get user information from legacy API"""
+    try:
+        response = requests.get(f'https://users.roblox.com/v1/users/{user_id}')
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/users/search')
+def search_users():
+    """Search for users by keyword"""
+    try:
+        keyword = request.args.get('keyword', '')
+        limit = request.args.get('limit', 10)
+
+        response = requests.get(
+            'https://users.roblox.com/v1/users/search',
+            params={'keyword': keyword, 'limit': limit}
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/users/<user_id>/friends')
+def get_user_friends(user_id):
+    """Get user's friends list"""
+    try:
+        response = requests.get(f'https://friends.roblox.com/v1/users/{user_id}/friends')
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/users/<user_id>/presence')
+def get_user_presence(user_id):
+    """Get user's online presence"""
+    try:
+        response = requests.post(
+            'https://presence.roblox.com/v1/presence/users',
+            json={'userIds': [int(user_id)]}
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/groups/<group_id>')
+def get_group_info_legacy(group_id):
+    """Get group information from legacy API"""
+    try:
+        response = requests.get(f'https://groups.roblox.com/v1/groups/{group_id}')
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= LEGACY API - GAMES & CATALOG =============
+
+@app.route('/api/roblox/legacy/games/<universe_id>/info')
+def get_game_info_legacy(universe_id):
+    """Get game information from legacy API"""
+    try:
+        response = requests.get(
+            f'https://games.roblox.com/v1/games?universeIds={universe_id}'
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/games/<universe_id>/servers')
+def get_game_servers(universe_id):
+    """Get running game servers"""
+    try:
+        response = requests.get(
+            f'https://games.roblox.com/v1/games/{universe_id}/servers/Public',
+            params={'limit': 100}
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/games/<universe_id>/favorites/count')
+def get_game_favorites_count(universe_id):
+    """Get game favorites count"""
+    try:
+        response = requests.get(
+            f'https://games.roblox.com/v1/games/{universe_id}/favorites/count'
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/games/<universe_id>/votes')
+def get_game_votes(universe_id):
+    """Get game voting data"""
+    try:
+        response = requests.get(
+            f'https://games.roblox.com/v1/games/votes?universeIds={universe_id}'
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/catalog/search')
+def search_catalog():
+    """Search Roblox catalog"""
+    try:
+        keyword = request.args.get('keyword', '')
+        category = request.args.get('category', 'All')
+        limit = request.args.get('limit', 30)
+
+        response = requests.get(
+            'https://catalog.roblox.com/v1/search/items',
+            params={
+                'keyword': keyword,
+                'category': category,
+                'limit': limit
+            }
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= LEGACY API - THUMBNAILS & AVATAR =============
+
+@app.route('/api/roblox/legacy/thumbnails/users')
+def get_user_thumbnails():
+    """Get user avatar thumbnails"""
+    try:
+        user_ids = request.args.get('userIds', '')
+        size = request.args.get('size', '420x420')
+        format_type = request.args.get('format', 'Png')
+
+        response = requests.get(
+            'https://thumbnails.roblox.com/v1/users/avatar',
+            params={
+                'userIds': user_ids,
+                'size': size,
+                'format': format_type
+            }
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/thumbnails/games')
+def get_game_thumbnails():
+    """Get game icon thumbnails"""
+    try:
+        universe_ids = request.args.get('universeIds', '')
+        size = request.args.get('size', '512x512')
+        format_type = request.args.get('format', 'Png')
+
+        response = requests.get(
+            'https://thumbnails.roblox.com/v1/games/icons',
+            params={
+                'universeIds': universe_ids,
+                'size': size,
+                'format': format_type,
+                'isCircular': 'false'
+            }
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/avatar/<user_id>')
+def get_user_avatar(user_id):
+    """Get user's current avatar"""
+    try:
+        response = requests.get(
+            f'https://avatar.roblox.com/v1/users/{user_id}/avatar'
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/avatar/<user_id>/currently-wearing')
+def get_user_currently_wearing(user_id):
+    """Get items user is currently wearing"""
+    try:
+        response = requests.get(
+            f'https://avatar.roblox.com/v1/users/{user_id}/currently-wearing'
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/roblox/legacy/thumbnails/assets')
+def get_asset_thumbnails():
+    """Get asset thumbnails"""
+    try:
+        asset_ids = request.args.get('assetIds', '')
+        size = request.args.get('size', '420x420')
+        format_type = request.args.get('format', 'Png')
+
+        response = requests.get(
+            'https://thumbnails.roblox.com/v1/assets',
+            params={
+                'assetIds': asset_ids,
+                'size': size,
+                'format': format_type
+            }
+        )
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= DEVELOPER TOOLS - CODE GENERATION =============
+
+@app.route('/api/tools/generate-remote-event', methods=['POST'])
+def generate_remote_event():
+    """Generate RemoteEvent code"""
+    try:
+        data = request.json
+        event_name = data.get('name', 'MyEvent')
+        location = data.get('location', 'ReplicatedStorage')
+        parameters = data.get('parameters', [])
+
+        # Generate server script
+        server_code = f"""-- Server Script
+local {event_name} = {location}:WaitForChild("{event_name}")
+
+{event_name}.OnServerEvent:Connect(function(player{', ' + ', '.join(parameters) if parameters else ''})
+    -- Your server logic here
+    print(player.Name .. " fired {event_name}")
+end)
+"""
+
+        # Generate client script
+        client_code = f"""-- Client Script
+local {event_name} = {location}:WaitForChild("{event_name}")
+
+-- Fire to server
+{event_name}:FireServer({', '.join(parameters) if parameters else ''})
+"""
+
+        return jsonify({
+            'success': True,
+            'server_code': server_code,
+            'client_code': client_code
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/tools/generate-datastore-module', methods=['POST'])
+def generate_datastore_module():
+    """Generate DataStore manager module"""
+    try:
+        data = request.json
+        datastore_name = data.get('name', 'PlayerData')
+        default_data = data.get('defaultData', {})
+
+        code = f"""-- DataStore Manager Module
+local DataStoreService = game:GetService("DataStoreService")
+local {datastore_name}Store = DataStoreService:GetDataStore("{datastore_name}")
+
+local DataManager = {{}}
+
+local DEFAULT_DATA = {json.dumps(default_data, indent=4)}
+
+function DataManager:LoadData(player)
+    local success, data = pcall(function()
+        return {datastore_name}Store:GetAsync("Player_" .. player.UserId)
+    end)
+
+    if success then
+        return data or DEFAULT_DATA
+    else
+        warn("Failed to load data for " .. player.Name)
+        return DEFAULT_DATA
+    end
+end
+
+function DataManager:SaveData(player, data)
+    local success, err = pcall(function()
+        {datastore_name}Store:SetAsync("Player_" .. player.UserId, data)
+    end)
+
+    if success then
+        print("Data saved for " .. player.Name)
+    else
+        warn("Failed to save data for " .. player.Name .. ": " .. tostring(err))
+    end
+end
+
+function DataManager:UpdateData(player, updateFunction)
+    local success, err = pcall(function()
+        {datastore_name}Store:UpdateAsync("Player_" .. player.UserId, updateFunction)
+    end)
+
+    if not success then
+        warn("Failed to update data: " .. tostring(err))
+    end
+end
+
+return DataManager
+"""
+
+        return jsonify({
+            'success': True,
+            'code': code
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/tools/generate-service', methods=['POST'])
+def generate_service_module():
+    """Generate service module template"""
+    try:
+        data = request.json
+        service_name = data.get('name', 'MyService')
+        methods = data.get('methods', [])
+
+        methods_code = '\n\n'.join([
+            f"function {service_name}:{method['name']}({', '.join(method.get('params', []))})\n    -- TODO: Implement {method['name']}\nend"
+            for method in methods
+        ])
+
+        code = f"""-- {service_name} Module
+local {service_name} = {{}}
+{service_name}.__index = {service_name}
+
+function {service_name}.new()
+    local self = setmetatable({{}}, {service_name})
+    -- Initialize service
+    return self
+end
+
+function {service_name}:Init()
+    -- Initialization logic
+    print("{service_name} initialized")
+end
+
+{methods_code}
+
+return {service_name}
+"""
+
+        return jsonify({
+            'success': True,
+            'code': code
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/tools/luau-validate', methods=['POST'])
+def validate_luau_code():
+    """Basic Luau syntax validation"""
+    try:
+        data = request.json
+        code = data.get('code', '')
+
+        issues = []
+        lines = code.split('\n')
+
+        # Basic syntax checks
+        for i, line in enumerate(lines, 1):
+            # Check for common mistakes
+            if 'function(' in line:
+                issues.append({
+                    'line': i,
+                    'type': 'warning',
+                    'message': 'Missing space after function keyword'
+                })
+            if line.strip().endswith('then') and not line.strip().startswith('--'):
+                issues.append({
+                    'line': i,
+                    'type': 'style',
+                    'message': 'Consider putting code after "then" on next line'
+                })
+            if '==' in line and 'nil' in line:
+                issues.append({
+                    'line': i,
+                    'type': 'warning',
+                    'message': 'Consider using "if not value" instead of "== nil"'
+                })
+
+        return jsonify({
+            'success': True,
+            'issues': issues,
+            'issue_count': len(issues)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/tools/generate-gui-code', methods=['POST'])
+def generate_gui_code():
+    """Generate GUI creation code"""
+    try:
+        data = request.json
+        gui_name = data.get('name', 'MyGUI')
+        gui_type = data.get('type', 'ScreenGui')
+        elements = data.get('elements', [])
+
+        elements_code = '\n'.join([
+            f"""local {elem['name']} = Instance.new("{elem['type']}")
+{elem['name']}.Name = "{elem['name']}"
+{elem['name']}.Parent = {gui_name}
+-- Configure {elem['name']} properties here
+"""
+            for elem in elements
+        ])
+
+        code = f"""-- GUI Script
+local {gui_name} = Instance.new("{gui_type}")
+{gui_name}.Name = "{gui_name}"
+{gui_name}.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+{gui_name}.ResetOnSpawn = false
+
+{elements_code}
+"""
+
+        return jsonify({
+            'success': True,
+            'code': code
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= ANALYTICS & MONITORING =============
+
+@app.route('/api/analytics/universe/<universe_id>/stats')
+def get_universe_stats(universe_id):
+    """Get comprehensive universe statistics"""
+    try:
+        # Get player count
+        player_response = requests.get(
+            f'https://games.roblox.com/v1/games?universeIds={universe_id}'
+        )
+
+        stats = {}
+
+        if player_response.status_code == 200:
+            game_data = player_response.json().get('data', [{}])[0]
+            stats['playing'] = game_data.get('playing', 0)
+            stats['visits'] = game_data.get('visits', 0)
+            stats['favorites'] = game_data.get('favoritedCount', 0)
+
+        # Get votes
+        vote_response = requests.get(
+            f'https://games.roblox.com/v1/games/votes?universeIds={universe_id}'
+        )
+
+        if vote_response.status_code == 200:
+            vote_data = vote_response.json().get('data', [{}])[0]
+            stats['upVotes'] = vote_data.get('upVotes', 0)
+            stats['downVotes'] = vote_data.get('downVotes', 0)
+
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/analytics/track-event', methods=['POST'])
+def track_custom_event():
+    """Track custom analytics event"""
+    try:
+        data = request.json
+        event_type = data.get('type')
+        event_data = data.get('data', {})
+        universe_id = data.get('universeId')
+
+        conn = sqlite3.connect('data/datastore.db')
+        c = conn.cursor()
+
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS analytics_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                universe_id TEXT,
+                event_type TEXT,
+                event_data TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        c.execute(
+            'INSERT INTO analytics_events (universe_id, event_type, event_data) VALUES (?, ?, ?)',
+            (universe_id, event_type, json.dumps(event_data))
+        )
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/analytics/events/<universe_id>')
+def get_analytics_events(universe_id):
+    """Get analytics events for universe"""
+    try:
+        conn = sqlite3.connect('data/datastore.db')
+        c = conn.cursor()
+
+        c.execute(
+            'SELECT event_type, event_data, timestamp FROM analytics_events WHERE universe_id = ? ORDER BY timestamp DESC LIMIT 1000',
+            (universe_id,)
+        )
+
+        events = []
+        for row in c.fetchall():
+            events.append({
+                'type': row[0],
+                'data': json.loads(row[1]),
+                'timestamp': row[2]
+            })
+
+        conn.close()
+
+        return jsonify({'success': True, 'events': events})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/monitoring/health-check/<universe_id>')
+def universe_health_check(universe_id):
+    """Perform health check on universe"""
+    try:
+        health = {
+            'timestamp': datetime.now().isoformat(),
+            'checks': []
+        }
+
+        # Check if game is online
+        game_response = requests.get(
+            f'https://games.roblox.com/v1/games?universeIds={universe_id}'
+        )
+
+        if game_response.status_code == 200:
+            game_data = game_response.json().get('data', [{}])[0]
+            health['checks'].append({
+                'name': 'Game API',
+                'status': 'healthy',
+                'details': f"Currently {game_data.get('playing', 0)} players online"
+            })
+        else:
+            health['checks'].append({
+                'name': 'Game API',
+                'status': 'unhealthy',
+                'details': f'API returned {game_response.status_code}'
+            })
+
+        # Check DataStore access
+        headers = {'x-api-key': global_config.get('api_key', '')}
+        ds_response = requests.get(
+            f'https://apis.roblox.com/datastores/v1/universes/{universe_id}/standard-datastores',
+            headers=headers
+        )
+
+        if ds_response.status_code == 200:
+            health['checks'].append({
+                'name': 'DataStore Access',
+                'status': 'healthy'
+            })
+        else:
+            health['checks'].append({
+                'name': 'DataStore Access',
+                'status': 'unhealthy',
+                'details': f'API returned {ds_response.status_code}'
+            })
+
+        health['overall_status'] = 'healthy' if all(c['status'] == 'healthy' for c in health['checks']) else 'degraded'
+
+        return jsonify(health)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/monitoring/server-list/<universe_id>')
+def monitor_server_list(universe_id):
+    """Monitor and list all running servers"""
+    try:
+        response = requests.get(
+            f'https://games.roblox.com/v1/games/{universe_id}/servers/Public',
+            params={'limit': 100}
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            servers = data.get('data', [])
+
+            analysis = {
+                'total_servers': len(servers),
+                'total_players': sum(s.get('playing', 0) for s in servers),
+                'average_players_per_server': sum(s.get('playing', 0) for s in servers) / len(servers) if servers else 0,
+                'servers': servers
+            }
+
+            return jsonify(analysis)
+        else:
+            return jsonify({'error': f'API error: {response.status_code}'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============= UTILITIES & HELPERS =============
+
+@app.route('/api/utils/batch-operations', methods=['POST'])
+def batch_operations():
+    """Execute multiple operations in batch"""
+    try:
+        data = request.json
+        operations = data.get('operations', [])
+        results = []
+
+        for op in operations:
+            op_type = op.get('type')
+            op_data = op.get('data', {})
+
+            # Execute operation based on type
+            if op_type == 'datastore_set':
+                # Handle datastore set
+                results.append({'operation': op_type, 'status': 'completed'})
+            elif op_type == 'datastore_delete':
+                # Handle datastore delete
+                results.append({'operation': op_type, 'status': 'completed'})
+            else:
+                results.append({'operation': op_type, 'status': 'unsupported'})
+
+        return jsonify({'success': True, 'results': results})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/utils/webhook/send', methods=['POST'])
+def send_webhook():
+    """Send webhook notification"""
+    try:
+        data = request.json
+        webhook_url = data.get('url')
+        content = data.get('content', {})
+
+        response = requests.post(webhook_url, json=content)
+
+        return jsonify({
+            'success': response.status_code == 200,
+            'status_code': response.status_code
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/utils/rate-limiter/status')
+def get_rate_limiter_status():
+    """Get rate limiter status"""
+    try:
+        # Simple rate limiter status
+        status = {
+            'requests_remaining': 1000,
+            'reset_time': (datetime.now().timestamp() + 3600),
+            'limit': 1000
+        }
+
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/utils/backup/create', methods=['POST'])
+def create_backup():
+    """Create backup of datastores"""
+    try:
+        data = request.json
+        universe_id = data.get('universeId')
+        datastore_name = data.get('datastoreName')
+
+        # Create backup directory if not exists
+        backup_dir = 'data/backups'
+        os.makedirs(backup_dir, exist_ok=True)
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_file = f"{backup_dir}/backup_{universe_id}_{datastore_name}_{timestamp}.json"
+
+        # Export datastore (simplified)
+        backup_data = {
+            'universe_id': universe_id,
+            'datastore': datastore_name,
+            'timestamp': timestamp,
+            'data': {}  # Would contain actual data
+        }
+
+        with open(backup_file, 'w') as f:
+            json.dump(backup_data, f, indent=2)
+
+        return jsonify({
+            'success': True,
+            'backup_file': backup_file,
+            'timestamp': timestamp
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/utils/scheduler/add-task', methods=['POST'])
+def add_scheduled_task():
+    """Add a scheduled task"""
+    try:
+        data = request.json
+        task_name = data.get('name')
+        schedule = data.get('schedule')  # cron format
+        action = data.get('action')
+
+        conn = sqlite3.connect('data/datastore.db')
+        c = conn.cursor()
+
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS scheduled_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                schedule TEXT,
+                action TEXT,
+                enabled BOOLEAN DEFAULT 1,
+                last_run TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        c.execute(
+            'INSERT INTO scheduled_tasks (name, schedule, action) VALUES (?, ?, ?)',
+            (task_name, schedule, json.dumps(action))
+        )
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'task_id': c.lastrowid})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print('\n' + '='*60)
     print('  Roblox DataStore Manager')

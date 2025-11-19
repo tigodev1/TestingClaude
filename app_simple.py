@@ -4438,7 +4438,7 @@ if __name__ == '__main__':
     print('\n' + '='*60)
     print('  Roblox DataStore Manager')
     print('='*60)
-    print(f'\n  Running on http://127.0.0.1:8000\n')
+    print(f'\n  Running on http://127.0.0.1:8001\n')
 
     from waitress import serve
-    serve(app, host='127.0.0.1', port=8000)
+    serve(app, host='127.0.0.1', port=8001)

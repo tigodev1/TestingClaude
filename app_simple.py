@@ -3572,7 +3572,7 @@ def search_datastore_entries(universe_id, datastore):
 
 
 @app.route('/api/roblox/datastore/<universe_id>/<datastore>/export', methods=['POST'])
-def export_datastore(universe_id, datastore):
+def export_datastore_full(universe_id, datastore):
     """Export entire datastore to JSON"""
     try:
         headers = {'x-api-key': global_config.get('api_key', '')}
@@ -3625,7 +3625,7 @@ def export_datastore(universe_id, datastore):
 # ============= LEGACY API - USERS & SOCIAL =============
 
 @app.route('/api/roblox/legacy/users/<user_id>')
-def get_user_info(user_id):
+def get_user_info_legacy(user_id):
     """Get user information from legacy API"""
     try:
         response = requests.get(f'https://users.roblox.com/v1/users/{user_id}')

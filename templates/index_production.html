@@ -46,6 +46,37 @@
 <div class="nav-item" data-page="asset-extractor"><i class="fas fa-box-open"></i><span>Asset Extractor</span></div>
 <div class="nav-item" data-page="rbx-encoder"><i class="fas fa-file-archive"></i><span>RBX Encoder</span></div>
 <div class="nav-item" data-page="name-gen"><i class="fas fa-random"></i><span>Name Generator</span></div>
+<div class="nav-section"><div class="nav-section-title">Testing & Debug</div></div>
+<div class="nav-item" data-page="http-tester"><i class="fas fa-network-wired"></i><span>HTTP Tester</span></div>
+<div class="nav-item" data-page="webhook-test"><i class="fas fa-paper-plane"></i><span>Webhook Tester</span></div>
+<div class="nav-item" data-page="json-validator"><i class="fas fa-check-double"></i><span>JSON Validator</span></div>
+<div class="nav-item" data-page="regex-tester"><i class="fas fa-search"></i><span>Regex Tester</span></div>
+<div class="nav-item" data-page="error-logger"><i class="fas fa-bug"></i><span>Error Logger</span></div>
+<div class="nav-item" data-page="perf-monitor"><i class="fas fa-tachometer-alt"></i><span>Performance Monitor</span></div>
+<div class="nav-section"><div class="nav-section-title">Data Tools</div></div>
+<div class="nav-item" data-page="json-to-lua"><i class="fas fa-file-export"></i><span>JSON to Lua</span></div>
+<div class="nav-item" data-page="csv-parser"><i class="fas fa-table"></i><span>CSV Parser</span></div>
+<div class="nav-item" data-page="table-generator"><i class="fas fa-th"></i><span>Table Generator</span></div>
+<div class="nav-item" data-page="data-merger"><i class="fas fa-compress-arrows-alt"></i><span>Data Merger</span></div>
+<div class="nav-item" data-page="diff-checker"><i class="fas fa-not-equal"></i><span>Diff Checker</span></div>
+<div class="nav-section"><div class="nav-section-title">Asset Tools</div></div>
+<div class="nav-item" data-page="thumbnail-viewer"><i class="fas fa-images"></i><span>Thumbnail Viewer</span></div>
+<div class="nav-item" data-page="decal-finder"><i class="fas fa-image"></i><span>Decal ID Finder</span></div>
+<div class="nav-item" data-page="audio-search"><i class="fas fa-music"></i><span>Audio Search</span></div>
+<div class="nav-item" data-page="model-info"><i class="fas fa-cubes"></i><span>Model Info</span></div>
+<div class="nav-item" data-page="asset-downloader"><i class="fas fa-download"></i><span>Asset Downloader</span></div>
+<div class="nav-section"><div class="nav-section-title">Script Utils</div></div>
+<div class="nav-item" data-page="code-minifier"><i class="fas fa-compress"></i><span>Code Minifier</span></div>
+<div class="nav-item" data-page="comment-stripper"><i class="fas fa-eraser"></i><span>Comment Stripper</span></div>
+<div class="nav-item" data-page="var-renamer"><i class="fas fa-i-cursor"></i><span>Variable Renamer</span></div>
+<div class="nav-item" data-page="syntax-highlighter"><i class="fas fa-highlighter"></i><span>Syntax Highlighter</span></div>
+<div class="nav-item" data-page="line-counter"><i class="fas fa-list-ol"></i><span>Line Counter</span></div>
+<div class="nav-section"><div class="nav-section-title">Game Management</div></div>
+<div class="nav-item" data-page="badge-checker"><i class="fas fa-award"></i><span>Badge Checker</span></div>
+<div class="nav-item" data-page="gamepass-validator"><i class="fas fa-ticket-alt"></i><span>Gamepass Manager</span></div>
+<div class="nav-item" data-page="product-manager"><i class="fas fa-shopping-cart"></i><span>Dev Products</span></div>
+<div class="nav-item" data-page="teleport-helper"><i class="fas fa-portal-enter"></i><span>Teleport Helper</span></div>
+<div class="nav-item" data-page="place-manager"><i class="fas fa-map"></i><span>Place Manager</span></div>
 <div class="nav-section"><div class="nav-section-title">AI Stuff</div></div>
 <div class="nav-item" data-page="imagegen"><i class="fas fa-image"></i><span>Image Generator</span></div>
 <div class="nav-item" data-page="chatbot"><i class="fas fa-comments"></i><span>AI Chatbot</span></div>
@@ -462,6 +493,207 @@ print(dateTime:FormatLocalTime())</textarea></div></div>
 <div class="card"><div class="card-header"><h3 class="card-title">Generated Names</h3><button class="btn btn-sm btn-secondary" onclick="copyCode('nameOutput')"><i class="fas fa-copy"></i></button></div><div class="card-body"><textarea id="nameOutput" class="form-input font-mono" rows="15" readonly></textarea></div></div>
 </div>
 
+<!-- HTTP Tester -->
+<div id="page-http-tester" class="page">
+<div class="page-header"><h1 class="page-title">HTTP Request Tester</h1><p class="page-subtitle">Test HTTP requests and inspect responses</p></div>
+<div class="card"><div class="card-body"><div class="grid-2 mb-3"><div class="form-group"><label class="form-label">Method</label><select id="httpMethod" class="form-input"><option value="GET">GET</option><option value="POST">POST</option><option value="PUT">PUT</option><option value="DELETE">DELETE</option><option value="PATCH">PATCH</option></select></div><div class="form-group"><label class="form-label">URL</label><input type="text" id="httpUrl" class="form-input" placeholder="https://api.example.com/endpoint"></div></div><div class="form-group"><label class="form-label">Headers (JSON)</label><textarea id="httpHeaders" class="form-input font-mono" rows="3">{"Content-Type": "application/json"}</textarea></div><div class="form-group"><label class="form-label">Body (for POST/PUT/PATCH)</label><textarea id="httpBody" class="form-input font-mono" rows="5">{"key": "value"}</textarea></div><button class="btn btn-primary" onclick="sendHttpRequest()"><i class="fas fa-paper-plane"></i> Send Request</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Response</h3><div class="flex gap-2"><span id="httpStatusCode" class="badge"></span><span id="httpResponseTime" class="text-muted"></span></div></div><div class="card-body"><textarea id="httpResponse" class="form-input font-mono" rows="15" readonly placeholder="Response will appear here..."></textarea></div></div>
+</div>
+
+<!-- Webhook Tester -->
+<div id="page-webhook-test" class="page">
+<div class="page-header"><h1 class="page-title">Webhook Tester</h1><p class="page-subtitle">Test Discord webhooks and other webhook services</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Webhook URL</label><input type="text" id="webhookUrl" class="form-input" placeholder="https://discord.com/api/webhooks/..."></div><div class="form-group"><label class="form-label">Webhook Type</label><select id="webhookType" class="form-input" onchange="updateWebhookTemplate()"><option value="discord">Discord</option><option value="slack">Slack</option><option value="custom">Custom JSON</option></select></div><div id="discordWebhookFields"><div class="form-group"><label class="form-label">Username</label><input type="text" id="webhookUsername" class="form-input" value="Roblox Bot"></div><div class="form-group"><label class="form-label">Message</label><textarea id="webhookMessage" class="form-input" rows="3">Hello from Tigos Hub!</textarea></div><div class="form-group"><label class="form-label">Embed Color (hex)</label><input type="color" id="webhookColor" class="form-input" value="#667eea"></div></div><div id="customWebhookFields" style="display:none;"><div class="form-group"><label class="form-label">Custom Payload (JSON)</label><textarea id="webhookCustomPayload" class="form-input font-mono" rows="8">{}</textarea></div></div><button class="btn btn-primary" onclick="sendWebhook()"><i class="fas fa-paper-plane"></i> Send Webhook</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Result</h3></div><div class="card-body"><div id="webhookResult" style="padding:20px;text-align:center;" class="text-muted">Send a webhook to see the result</div></div></div>
+</div>
+
+<!-- JSON Validator -->
+<div id="page-json-validator" class="page">
+<div class="page-header"><h1 class="page-title">JSON Validator</h1><p class="page-subtitle">Validate and format JSON data</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">JSON Input</label><textarea id="jsonValidatorInput" class="form-input font-mono" rows="15" placeholder='{"example": "data"}'></textarea></div><div class="flex gap-2 mt-3"><button class="btn btn-primary" onclick="validateJsonData()"><i class="fas fa-check"></i> Validate</button><button class="btn btn-secondary" onclick="formatJsonData()"><i class="fas fa-magic"></i> Format</button><button class="btn btn-secondary" onclick="minifyJsonData()"><i class="fas fa-compress"></i> Minify</button></div></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Validation Result</h3></div><div class="card-body"><div id="jsonValidatorResult" style="padding:20px;"></div></div></div>
+</div>
+
+<!-- Regex Tester -->
+<div id="page-regex-tester" class="page">
+<div class="page-header"><h1 class="page-title">Regex Tester</h1><p class="page-subtitle">Test and debug regular expressions</p></div>
+<div class="card"><div class="card-body"><div class="grid-2 mb-3"><div class="form-group"><label class="form-label">Pattern</label><input type="text" id="regexPatternInput" class="form-input font-mono" placeholder="\d+"></div><div class="form-group"><label class="form-label">Flags</label><input type="text" id="regexFlagsInput" class="form-input" placeholder="gi" value="g"></div></div><div class="form-group"><label class="form-label">Test String</label><textarea id="regexTestInput" class="form-input font-mono" rows="8" placeholder="Enter text to test against the regex..."></textarea></div><button class="btn btn-primary" onclick="testRegexPattern()"><i class="fas fa-play"></i> Test Regex</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Matches (<span id="regexMatchCount">0</span>)</h3></div><div class="card-body"><div id="regexMatches" style="min-height:200px;"></div></div></div>
+</div>
+
+<!-- Error Logger -->
+<div id="page-error-logger" class="page">
+<div class="page-header"><h1 class="page-title">Error Logger</h1><p class="page-subtitle">Log and track errors from your Roblox game</p></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Recent Errors</h3><button class="btn btn-sm btn-secondary" onclick="refreshErrorLog()"><i class="fas fa-sync"></i> Refresh</button></div><div class="table-container"><table><thead><tr><th>Time</th><th>Error Type</th><th>Message</th><th>Stack</th><th>Player</th></tr></thead><tbody id="errorLogTable"><tr><td colspan="5" class="empty-state">No errors logged</td></tr></tbody></table></div></div>
+<div class="card"><div class="card-body"><p class="text-muted">To log errors from your game, send POST requests to <code>/api/log-error</code> with error data.</p><pre class="font-mono" style="background:var(--bg-surface);padding:12px;border-radius:8px;">-- Roblox Script Example
+local HttpService = game:GetService("HttpService")
+pcall(function()
+  -- Your code here
+end)
+if not success then
+  HttpService:PostAsync("YOUR_URL/api/log-error", HttpService:JSONEncode({
+    errorType = "RuntimeError",
+    message = tostring(error),
+    stack = debug.traceback(),
+    playerId = player.UserId
+  }))
+end</pre></div></div>
+</div>
+
+<!-- Performance Monitor -->
+<div id="page-perf-monitor" class="page">
+<div class="page-header"><h1 class="page-title">Performance Monitor</h1><p class="page-subtitle">Monitor script performance and benchmarks</p></div>
+<div class="stats-grid mb-4"><div class="stat-card"><div class="stat-value" id="perfAvgTime">0ms</div><div class="stat-label">Avg Execution</div></div><div class="stat-card"><div class="stat-value" id="perfMinTime">0ms</div><div class="stat-label">Min Time</div></div><div class="stat-card"><div class="stat-value" id="perfMaxTime">0ms</div><div class="stat-label">Max Time</div></div><div class="stat-card"><div class="stat-value" id="perfIterations">0</div><div class="stat-label">Iterations</div></div></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Code to Benchmark</label><textarea id="perfCode" class="form-input font-mono" rows="10" placeholder="-- Enter Luau code to benchmark
+for i = 1, 1000 do
+  -- Your code here
+end"></textarea></div><div class="grid-2 mb-3"><div class="form-group"><label class="form-label">Iterations</label><input type="number" id="perfIterationsInput" class="form-input" value="100" min="1"></div><div class="form-group"><label class="form-label">Warmup Runs</label><input type="number" id="perfWarmup" class="form-input" value="10" min="0"></div></div><button class="btn btn-primary" onclick="runPerformanceBenchmark()"><i class="fas fa-tachometer-alt"></i> Run Benchmark</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Benchmark Results</h3></div><div class="card-body"><div id="perfResults"><p class="text-muted text-center">Run a benchmark to see results</p></div></div></div>
+</div>
+
+<!-- JSON to Lua -->
+<div id="page-json-to-lua" class="page">
+<div class="page-header"><h1 class="page-title">JSON to Lua Converter</h1><p class="page-subtitle">Convert JSON to Lua tables</p></div>
+<div class="grid-2"><div class="card"><div class="card-header"><h3 class="card-title">JSON Input</h3></div><div class="card-body"><textarea id="jsonToLuaInput" class="form-input font-mono" rows="20" placeholder='{"key": "value", "array": [1, 2, 3]}'></textarea></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Lua Output</h3><button class="btn btn-sm btn-primary" onclick="convertJsonToLua()"><i class="fas fa-exchange-alt"></i> Convert</button></div><div class="card-body"><textarea id="jsonToLuaOutput" class="form-input font-mono" rows="20" readonly placeholder="Lua table will appear here..."></textarea></div></div></div>
+</div>
+
+<!-- CSV Parser -->
+<div id="page-csv-parser" class="page">
+<div class="page-header"><h1 class="page-title">CSV Parser</h1><p class="page-subtitle">Parse and convert CSV data</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">CSV Data</label><textarea id="csvInput" class="form-input font-mono" rows="10" placeholder="Name,Age,Score
+John,25,100
+Jane,30,95"></textarea></div><div class="flex gap-2 mt-3"><button class="btn btn-primary" onclick="parseCSV()"><i class="fas fa-table"></i> Parse CSV</button><button class="btn btn-secondary" onclick="csvToJson()"><i class="fas fa-file-code"></i> To JSON</button><button class="btn btn-secondary" onclick="csvToLua()"><i class="fas fa-code"></i> To Lua</button></div></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Output</h3></div><div class="card-body"><textarea id="csvOutput" class="form-input font-mono" rows="12" readonly></textarea></div></div>
+</div>
+
+<!-- Table Generator -->
+<div id="page-table-generator" class="page">
+<div class="page-header"><h1 class="page-title">Table Generator</h1><p class="page-subtitle">Generate Lua tables with custom data</p></div>
+<div class="card"><div class="card-body"><div class="grid-2 mb-3"><div class="form-group"><label class="form-label">Rows</label><input type="number" id="tableRows" class="form-input" value="5" min="1" max="100"></div><div class="form-group"><label class="form-label">Columns</label><input type="number" id="tableCols" class="form-input" value="3" min="1" max="20"></div></div><div class="form-group"><label class="form-label">Data Type</label><select id="tableDataType" class="form-input"><option value="numbers">Numbers</option><option value="strings">Strings</option><option value="mixed">Mixed</option><option value="custom">Custom Template</option></select></div><button class="btn btn-primary" onclick="generateTable()"><i class="fas fa-th"></i> Generate Table</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Generated Table</h3><button class="btn btn-sm btn-secondary" onclick="copyCode('tableOutput')"><i class="fas fa-copy"></i></button></div><div class="card-body"><textarea id="tableOutput" class="form-input font-mono" rows="15" readonly></textarea></div></div>
+</div>
+
+<!-- Data Merger -->
+<div id="page-data-merger" class="page">
+<div class="page-header"><h1 class="page-title">Data Merger</h1><p class="page-subtitle">Merge multiple data sources</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Data Source 1 (JSON/Lua)</label><textarea id="mergeSource1" class="form-input font-mono" rows="8" placeholder='{"player1": {"coins": 100}}'></textarea></div><div class="form-group"><label class="form-label">Data Source 2 (JSON/Lua)</label><textarea id="mergeSource2" class="form-input font-mono" rows="8" placeholder='{"player1": {"level": 5}}'></textarea></div><div class="form-group"><label class="form-label">Merge Strategy</label><select id="mergeStrategy" class="form-input"><option value="deep">Deep Merge</option><option value="shallow">Shallow Merge</option><option value="overwrite">Overwrite</option></select></div><button class="btn btn-primary" onclick="mergeData()"><i class="fas fa-compress-arrows-alt"></i> Merge</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Merged Output</h3></div><div class="card-body"><textarea id="mergeOutput" class="form-input font-mono" rows="12" readonly></textarea></div></div>
+</div>
+
+<!-- Diff Checker -->
+<div id="page-diff-checker" class="page">
+<div class="page-header"><h1 class="page-title">Diff Checker</h1><p class="page-subtitle">Compare two pieces of code or data</p></div>
+<div class="grid-2"><div class="card"><div class="card-header"><h3 class="card-title">Original</h3></div><div class="card-body"><textarea id="diffOriginal" class="form-input font-mono" rows="18" placeholder="Original code/data..."></textarea></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Modified</h3></div><div class="card-body"><textarea id="diffModified" class="form-input font-mono" rows="18" placeholder="Modified code/data..."></textarea></div></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Differences</h3><button class="btn btn-sm btn-primary" onclick="compareDiff()"><i class="fas fa-not-equal"></i> Compare</button></div><div class="card-body"><div id="diffOutput" style="min-height:200px;font-family:monospace;"></div></div></div>
+</div>
+
+<!-- Thumbnail Viewer -->
+<div id="page-thumbnail-viewer" class="page">
+<div class="page-header"><h1 class="page-title">Asset Thumbnail Viewer</h1><p class="page-subtitle">View thumbnails for any Roblox asset</p></div>
+<div class="card"><div class="card-body"><div class="grid-3 mb-3"><div class="form-group"><label class="form-label">Asset Type</label><select id="thumbnailType" class="form-input"><option value="users">User Avatar</option><option value="games">Game Icon</option><option value="assets">Asset</option><option value="badges">Badge</option><option value="groups">Group</option></select></div><div class="form-group"><label class="form-label">Asset ID</label><input type="text" id="thumbnailId" class="form-input" placeholder="Enter ID..."></div><div class="form-group"><label class="form-label">Size</label><select id="thumbnailSize" class="form-input"><option value="150x150">150x150</option><option value="420x420" selected>420x420</option><option value="768x432">768x432</option></select></div></div><button class="btn btn-primary" onclick="loadThumbnail()"><i class="fas fa-image"></i> Load Thumbnail</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Preview</h3></div><div class="card-body" style="text-align:center;"><img id="thumbnailPreview" style="max-width:100%;border-radius:8px;display:none;" alt="Thumbnail"><p id="thumbnailPlaceholder" class="text-muted">Enter an ID and click Load Thumbnail</p></div></div>
+</div>
+
+<!-- Decal Finder -->
+<div id="page-decal-finder" class="page">
+<div class="page-header"><h1 class="page-title">Decal ID Finder</h1><p class="page-subtitle">Find decal IDs from image assets</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Image Asset ID</label><input type="text" id="imageAssetId" class="form-input" placeholder="Enter image asset ID..."></div><button class="btn btn-primary" onclick="findDecalId()"><i class="fas fa-search"></i> Find Decal ID</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Results</h3></div><div class="card-body"><div id="decalResults"><p class="text-muted">Enter an image asset ID to find the decal ID</p></div></div></div>
+</div>
+
+<!-- Audio Search -->
+<div id="page-audio-search" class="page">
+<div class="page-header"><h1 class="page-title">Audio Search</h1><p class="page-subtitle">Search for Roblox audio IDs</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Search Query</label><input type="text" id="audioSearchQuery" class="form-input" placeholder="Enter audio name..."></div><button class="btn btn-primary" onclick="searchAudio()"><i class="fas fa-search"></i> Search</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Search Results</h3></div><div class="card-body"><div id="audioResults"><p class="text-muted">Search for audio files</p></div></div></div>
+</div>
+
+<!-- Model Info -->
+<div id="page-model-info" class="page">
+<div class="page-header"><h1 class="page-title">Model Info Viewer</h1><p class="page-subtitle">Get detailed information about Roblox models</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Model Asset ID</label><input type="text" id="modelAssetId" class="form-input" placeholder="Enter model ID..."></div><button class="btn btn-primary" onclick="loadModelInfo()"><i class="fas fa-cubes"></i> Load Info</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Model Details</h3></div><div class="card-body"><div id="modelInfo"><p class="text-muted">Enter a model ID to view details</p></div></div></div>
+</div>
+
+<!-- Asset Downloader -->
+<div id="page-asset-downloader" class="page">
+<div class="page-header"><h1 class="page-title">Asset Downloader</h1><p class="page-subtitle">Download Roblox assets and models</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Asset ID</label><input type="text" id="downloadAssetId" class="form-input" placeholder="Enter asset ID..."></div><div class="form-group"><label class="form-label">Asset Type</label><select id="downloadAssetType" class="form-input"><option value="model">Model</option><option value="audio">Audio</option><option value="image">Image</option><option value="mesh">Mesh</option></select></div><button class="btn btn-primary" onclick="downloadAsset()"><i class="fas fa-download"></i> Download</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Download Status</h3></div><div class="card-body"><div id="downloadStatus"><p class="text-muted">Enter an asset ID to download</p></div></div></div>
+</div>
+
+<!-- Code Minifier -->
+<div id="page-code-minifier" class="page">
+<div class="page-header"><h1 class="page-title">Code Minifier</h1><p class="page-subtitle">Minify Luau code to reduce file size</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Input Code</label><textarea id="minifyInput" class="form-input font-mono" rows="15" placeholder="-- Enter code to minify"></textarea></div><button class="btn btn-primary" onclick="minifyCode()"><i class="fas fa-compress"></i> Minify</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Minified Output</h3><button class="btn btn-sm btn-secondary" onclick="copyCode('minifyOutput')"><i class="fas fa-copy"></i></button></div><div class="card-body"><textarea id="minifyOutput" class="form-input font-mono" rows="12" readonly></textarea></div></div>
+</div>
+
+<!-- Comment Stripper -->
+<div id="page-comment-stripper" class="page">
+<div class="page-header"><h1 class="page-title">Comment Stripper</h1><p class="page-subtitle">Remove comments from Luau code</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Input Code</label><textarea id="stripInput" class="form-input font-mono" rows="15" placeholder="-- Comments will be removed"></textarea></div><div class="form-group"><input type="checkbox" id="stripMultiline" checked> <label>Remove multiline comments (--[[ ]])</label></div><button class="btn btn-primary" onclick="stripComments()"><i class="fas fa-eraser"></i> Strip Comments</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Output</h3><button class="btn btn-sm btn-secondary" onclick="copyCode('stripOutput')"><i class="fas fa-copy"></i></button></div><div class="card-body"><textarea id="stripOutput" class="form-input font-mono" rows="12" readonly></textarea></div></div>
+</div>
+
+<!-- Variable Renamer -->
+<div id="page-var-renamer" class="page">
+<div class="page-header"><h1 class="page-title">Variable Renamer</h1><p class="page-subtitle">Rename variables across your code</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Input Code</label><textarea id="renameInput" class="form-input font-mono" rows="12" placeholder="local oldName = 5"></textarea></div><div class="grid-2 mb-3"><div class="form-group"><label class="form-label">Old Variable Name</label><input type="text" id="renameOld" class="form-input" placeholder="oldName"></div><div class="form-group"><label class="form-label">New Variable Name</label><input type="text" id="renameNew" class="form-input" placeholder="newName"></div></div><button class="btn btn-primary" onclick="renameVariable()"><i class="fas fa-i-cursor"></i> Rename</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Output</h3><button class="btn btn-sm btn-secondary" onclick="copyCode('renameOutput')"><i class="fas fa-copy"></i></button></div><div class="card-body"><textarea id="renameOutput" class="form-input font-mono" rows="12" readonly></textarea></div></div>
+</div>
+
+<!-- Syntax Highlighter -->
+<div id="page-syntax-highlighter" class="page">
+<div class="page-header"><h1 class="page-title">Syntax Highlighter</h1><p class="page-subtitle">Add syntax highlighting to code</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Language</label><select id="highlightLang" class="form-input"><option value="lua">Luau/Lua</option><option value="javascript">JavaScript</option><option value="python">Python</option><option value="json">JSON</option></select></div><div class="form-group"><label class="form-label">Code</label><textarea id="highlightInput" class="form-input font-mono" rows="15" placeholder="Enter code to highlight"></textarea></div><button class="btn btn-primary" onclick="highlightSyntax()"><i class="fas fa-highlighter"></i> Highlight</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Highlighted Code</h3></div><div class="card-body"><div id="highlightOutput" style="background:var(--bg-surface);padding:16px;border-radius:8px;overflow-x:auto;"><p class="text-muted">Enter code to highlight</p></div></div></div>
+</div>
+
+<!-- Line Counter -->
+<div id="page-line-counter" class="page">
+<div class="page-header"><h1 class="page-title">Line Counter</h1><p class="page-subtitle">Count lines of code and analyze file statistics</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Code Input</label><textarea id="lineCountInput" class="form-input font-mono" rows="20" placeholder="Paste code to analyze"></textarea></div><button class="btn btn-primary" onclick="countLines()"><i class="fas fa-list-ol"></i> Analyze</button></div></div>
+<div class="stats-grid mb-4"><div class="stat-card"><div class="stat-value" id="totalLines">0</div><div class="stat-label">Total Lines</div></div><div class="stat-card"><div class="stat-value" id="codeLines">0</div><div class="stat-label">Code Lines</div></div><div class="stat-card"><div class="stat-value" id="commentLines">0</div><div class="stat-label">Comments</div></div><div class="stat-card"><div class="stat-value" id="blankLines">0</div><div class="stat-label">Blank Lines</div></div></div>
+</div>
+
+<!-- Badge Checker -->
+<div id="page-badge-checker" class="page">
+<div class="page-header"><h1 class="page-title">Badge Checker</h1><p class="page-subtitle">Check if users have earned specific badges</p></div>
+<div class="card"><div class="card-body"><div class="grid-2 mb-3"><div class="form-group"><label class="form-label">Badge ID</label><input type="text" id="badgeCheckId" class="form-input" placeholder="Enter badge ID..."></div><div class="form-group"><label class="form-label">User ID</label><input type="text" id="badgeCheckUser" class="form-input" placeholder="Enter user ID..."></div></div><button class="btn btn-primary" onclick="checkBadge()"><i class="fas fa-award"></i> Check Badge</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Result</h3></div><div class="card-body"><div id="badgeCheckResult"><p class="text-muted">Enter badge and user IDs to check</p></div></div></div>
+</div>
+
+<!-- Gamepass Manager -->
+<div id="page-gamepass-validator" class="page">
+<div class="page-header"><h1 class="page-title">Gamepass Manager</h1><p class="page-subtitle">Manage and validate gamepasses</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Gamepass ID</label><input type="text" id="gamepassId" class="form-input" placeholder="Enter gamepass ID..."></div><button class="btn btn-primary" onclick="loadGamepass()"><i class="fas fa-ticket-alt"></i> Load Gamepass</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Gamepass Info</h3></div><div class="card-body"><div id="gamepassInfo"><p class="text-muted">Enter a gamepass ID to view details</p></div></div></div>
+</div>
+
+<!-- Dev Products -->
+<div id="page-product-manager" class="page">
+<div class="page-header"><h1 class="page-title">Developer Products</h1><p class="page-subtitle">Manage developer products for your game</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Product ID</label><input type="text" id="productId" class="form-input" placeholder="Enter product ID..."></div><button class="btn btn-primary" onclick="loadProduct()"><i class="fas fa-shopping-cart"></i> Load Product</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Product Details</h3></div><div class="card-body"><div id="productInfo"><p class="text-muted">Enter a product ID to view details</p></div></div></div>
+</div>
+
+<!-- Teleport Helper -->
+<div id="page-teleport-helper" class="page">
+<div class="page-header"><h1 class="page-title">Teleport Code Helper</h1><p class="page-subtitle">Generate TeleportService code</p></div>
+<div class="card"><div class="card-body"><div class="grid-2 mb-3"><div class="form-group"><label class="form-label">Place ID</label><input type="text" id="teleportPlaceId" class="form-input" placeholder="Enter place ID..."></div><div class="form-group"><label class="form-label">Teleport Type</label><select id="teleportType" class="form-input"><option value="single">Single Player</option><option value="group">Group Teleport</option><option value="reserved">Reserved Server</option></select></div></div><div class="form-group"><label class="form-label">Teleport Data (Optional JSON)</label><textarea id="teleportData" class="form-input font-mono" rows="4" placeholder='{"gamemode": "pvp"}'></textarea></div><button class="btn btn-primary" onclick="generateTeleportCode()"><i class="fas fa-portal-enter"></i> Generate Code</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Generated Code</h3><button class="btn btn-sm btn-secondary" onclick="copyCode('teleportOutput')"><i class="fas fa-copy"></i></button></div><div class="card-body"><textarea id="teleportOutput" class="form-input font-mono" rows="12" readonly></textarea></div></div>
+</div>
+
+<!-- Place Manager -->
+<div id="page-place-manager" class="page">
+<div class="page-header"><h1 class="page-title">Place Manager</h1><p class="page-subtitle">Manage places in your universe</p></div>
+<div class="card"><div class="card-body"><div class="form-group"><label class="form-label">Universe ID</label><input type="text" id="placeUniverseId" class="form-input" placeholder="Enter universe ID..."></div><button class="btn btn-primary" onclick="loadPlaces()"><i class="fas fa-map"></i> Load Places</button></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Places</h3></div><div class="card-body"><div id="placesList"><p class="text-muted">Enter a universe ID to view places</p></div></div></div>
+</div>
+
 <div id="page-settings" class="page"><div class="page-header"><h1 class="page-title">Settings</h1><p class="page-subtitle">Configure your API credentials and authentication</p></div><div class="card"><div class="card-header"><h3 class="card-title">Open Cloud API</h3></div><div class="card-body"><div class="form-group"><label class="form-label">API Key</label><input type="password" class="form-input" id="apiKeyInput" placeholder="Enter your Roblox Open Cloud API Key"><small class="text-muted">Get your API key from <a href="https://create.roblox.com/credentials" target="_blank" style="color: var(--accent);">create.roblox.com/credentials</a></small></div><div class="form-group"><label class="form-label">Universe ID</label><input type="text" class="form-input" id="universeIdInput" placeholder="Enter your game's Universe ID"><small class="text-muted">Found in your game's settings on Roblox</small></div><div class="flex gap-3 mt-4"><button class="btn btn-primary" onclick="saveConfig()"><i class="fas fa-save"></i> Save Configuration</button><button class="btn btn-secondary" onclick="testConnection()"><i class="fas fa-plug"></i> Test Connection</button></div></div></div><div class="card"><div class="card-header"><h3 class="card-title">Roblox Cookie (Authentication)</h3></div><div class="card-body"><div class="form-group"><label class="form-label">.ROBLOSECURITY Cookie<span id="cookieStatus" class="text-sm" style="margin-left: 10px;"></span></label><input type="password" class="form-input" id="robloxCookieInput" placeholder="Paste your .ROBLOSECURITY cookie here"><small class="text-muted"><strong style="color: var(--warning);">WARNING:</strong> Your cookie gives full access to your account. Only use on your own server.</small></div><div class="flex gap-3 mt-4" style="flex-wrap: wrap;"><button class="btn btn-primary" onclick="saveCookie()"><i class="fas fa-save"></i> Save Cookie</button><button class="btn btn-secondary" onclick="testCookie()"><i class="fas fa-check-circle"></i> Test Cookie</button><button class="btn btn-danger" onclick="removeCookie()"><i class="fas fa-trash"></i> Remove</button><button class="btn btn-secondary" onclick="loadCookieStatus()"><i class="fas fa-sync"></i> Refresh</button></div><div id="cookieTestResult" style="margin-top: 16px; display: none;"></div></div></div><div class="card"><div class="card-header"><h3 class="card-title">API Request Log</h3><button class="btn btn-sm btn-secondary" onclick="loadRequestLog()"><i class="fas fa-sync"></i> Refresh</button></div><div class="table-container" style="max-height: 400px; overflow-y: auto;"><table><thead><tr><th>Time</th><th>Method</th><th>Endpoint</th><th>Status</th><th>Duration</th></tr></thead><tbody id="requestLogTable"></tbody></table></div></div></div>
 </main>
 </div>
@@ -476,5 +708,6 @@ print(dateTime:FormatLocalTime())</textarea></div></div>
 <script src="/static/js/luau_tools.js"></script>
 <script src="/static/js/ai_tools.js"></script>
 <script src="/static/js/dev_tools.js"></script>
+<script src="/static/js/advanced_tools.js"></script>
 </body>
 </html>
